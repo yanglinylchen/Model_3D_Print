@@ -21,6 +21,8 @@ Status: draft, awaiting requirements confirmation.
 - User can select brick, wood, stone slab, and wool block materials.
 - User can place cube blocks plus 30-degree and 45-degree triangular prism roof blocks.
 - Triangular prism blocks occupy a full grid cell and cannot be overlapped with another triangular prism in the same cell.
+- A 30-degree triangular prism reaches about `28.87mm` height inside a `50mm` cell.
+- The app blocks direct placement above a 30-degree triangular prism and shows a warning unless the upper block has front/back/left/right/top support from another occupied block.
 - User can rotate directional materials and triangular prism blocks.
 - User can choose automatic orientation alignment for neighboring same-material blocks.
 - Placed blocks display material-specific visual previews.
@@ -30,7 +32,8 @@ Status: draft, awaiting requirements confirmation.
 - Exported STL includes relief texture only on exposed faces.
 - Exported STL is one combined model file.
 - Exported STL is not a flat-cube representation; material texture relief is present in the mesh geometry.
-- Exported STL is watertight/manifold or export warns/blocks according to the chosen export policy.
+- STL export attempts safe automatic repair/optimization before final validation.
+- Exported STL is watertight/manifold, or export is blocked with a clear reason if repair cannot make the mesh valid.
 - Exported STL represents the model as closed solid volumes, not hollow open shells.
 - Multiple placed blocks retain visible boundary/seam detail in the exported mesh.
 - Repeated placement of natural materials produces varied but stable texture patterns.

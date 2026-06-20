@@ -37,3 +37,15 @@ Reason: STL represents surfaces, but slicers infer printable volume from a close
 Decision: Every cube or triangular prism occupies one full grid cell for editing and collision purposes.
 
 Reason: The user explicitly does not want two triangular prism blocks to stack inside one cube cell. Keeping one block per cell preserves Minecraft-like simplicity for education users.
+
+## ADR-007: Repair Before Blocking STL Export
+
+Decision: STL export should run conservative automatic repair/optimization before final validation, then block export with a clear reason if the mesh remains invalid.
+
+Reason: Users should not have to understand mesh topology to get printable output, but automated repair must preserve intentional material relief, rounded edges, and seams.
+
+## ADR-008: 30-Degree Roof Support Rule
+
+Decision: A 30-degree triangular prism rises only to about `28.87mm` inside a `50mm` cell. The cell directly above it is blocked unless the upper block is connected to another supporting occupied block on its front, back, left, right, or top side.
+
+Reason: The 30-degree prism does not provide a full-height flat support surface. The placement rule keeps the editor simple while preventing visually unsupported floating blocks.

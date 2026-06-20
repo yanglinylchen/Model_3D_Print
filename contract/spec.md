@@ -35,9 +35,13 @@ Model 3D Print is a macOS portable desktop 3D block modeling environment for cre
 - STL export as one combined STL file.
 - STL export should produce a watertight/manifold closed-volume mesh suitable for slicers.
 - STL export represents blocks as closed solid geometry, not hollow open shells. Slicer software controls actual print infill.
+- STL export runs safe repair/optimization before final validation where possible, including duplicate vertex welding, degenerate triangle removal, normal correction, hidden/internal face removal, duplicate face resolution, relief feature clamping, and conservative simplification that preserves required texture, rounded edges, and seams.
+- If automatic repair cannot produce a valid watertight/manifold mesh, export is blocked with a clear reason.
 - Material blocks: brick, wood, stone slab, wool.
 - Block shapes: standard cube plus triangular prism roof blocks with 30-degree and 45-degree variants.
 - Triangular prism blocks occupy one normal grid cell and cannot share that cell with another block.
+- A 30-degree triangular prism has a 30-degree sloped face inside one `50mm x 50mm x 50mm` cell. In local coordinates, the slope rises along one horizontal axis with `z = tan(30°) * x`, making the highest point about `28.87mm` at `x = 50mm`.
+- The cell directly above a 30-degree triangular prism is blocked by default. A block may be placed there only if that upper block is connected to another supporting occupied block on its front, back, left, right, or top side.
 - Directional materials and triangular prism blocks support rotation.
 - The app offers an automatic material-orientation alignment option for neighboring blocks with the same material.
 - Real geometric texture relief for 3D printing, not only visual texture maps.
