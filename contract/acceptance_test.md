@@ -11,7 +11,7 @@ Status: draft, awaiting requirements confirmation.
 - If resizing smaller would exclude existing blocks, the app warns the user and does not shrink the workspace.
 - User can save, reopen, and autosave a native project.
 - User can rotate/orbit the camera and place blocks using supported mouse/keyboard controls.
-- User can undo and redo edits.
+- User can undo and redo up to 50 edit steps.
 - User can delete/erase blocks.
 - User can select an existing block and change its material.
 - User can copy and paste one block, preserving its material and generated texture state.

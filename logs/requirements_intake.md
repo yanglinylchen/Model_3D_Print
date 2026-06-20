@@ -45,6 +45,7 @@ Production desktop app project. Requirements intake is in progress before design
 - Native project save/open is required.
 - Autosave is required.
 - Undo/redo is required.
+- Undo/redo history depth should be 50 steps.
 - Delete/erase mode is required.
 - User can select an existing block and change its material.
 - Copy/paste copies one block, including the material and generated texture state of that block.
@@ -92,6 +93,7 @@ Production desktop app project. Requirements intake is in progress before design
 - Object/block placement should support mouse placement and keyboard cursor movement with arrow keys.
 - Visual style and interaction model should be similar to Minecraft block building.
 - Undo/redo is required.
+- Undo/redo should retain 50 steps of edit history.
 - Delete/erase mode is required.
 - Copy/paste is required.
 - Copy/paste should copy one block including material and generated texture state.
@@ -128,7 +130,6 @@ Production desktop app project. Requirements intake is in progress before design
 
 ## Open Questions
 
-- Required undo/redo history depth.
 - Autosave interval and recovery behavior.
 - Native project file extension/name.
 - Exact default rounded-edge radius.

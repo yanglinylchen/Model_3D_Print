@@ -26,7 +26,7 @@ Model 3D Print is a macOS portable desktop 3D block modeling environment for cre
 - WASD camera rotation, mouse-wheel zoom, mouse right-button orbit, and arrow-key block-position movement are acceptable first-release controls.
 - Native project save/open.
 - Autosave.
-- Undo/redo.
+- Undo/redo with 50 steps of edit history.
 - Delete/erase mode.
 - Select an existing block and change its material.
 - Copy/paste support for one block including material and generated texture state.
