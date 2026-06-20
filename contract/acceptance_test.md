@@ -13,6 +13,7 @@ Status: draft, awaiting requirements confirmation.
 - User can save, reopen, and autosave a native project.
 - Native project files use the `.m3dp` extension.
 - Autosave runs once per minute.
+- On restart, the app prompts to recover autosaved work when autosave is newer than the last explicit save.
 - User can rotate/orbit the camera and place blocks using supported mouse/keyboard controls.
 - User can undo and redo up to 50 edit steps.
 - User can delete/erase blocks.
@@ -30,7 +31,10 @@ Status: draft, awaiting requirements confirmation.
 - If alignment may change texture direction or apparent random texture arrangement, the app warns before applying it.
 - Placed blocks display material-specific visual previews.
 - Exported STL includes real rounded block edges.
+- Rounded block edges use the `1.5mm` default radius.
+- Adjacent-block seams use the `1.0mm` default recessed depth.
 - Exported STL includes printable relief texture geometry for each material.
+- Default relief depths are brick `2.4mm`, stone slab `2.4mm`, wood grain `1.6mm`, and wool `1.2mm`.
 - Relief texture features are no smaller than `0.5mm` and no larger than `10mm`.
 - Exported STL includes relief texture only on exposed faces.
 - Exported STL is one combined model file.

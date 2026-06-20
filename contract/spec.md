@@ -51,6 +51,9 @@ Model 3D Print is a macOS portable desktop 3D block modeling environment for cre
 - Material relief is generated on exposed faces only.
 - Printable texture feature size is at least `0.5mm` and no more than `10mm`.
 - Rounded edge radius, seam depth, and relief depth use fixed defaults in the first release.
+- Default rounded-edge radius is `1.5mm`.
+- Default seam/gap recessed depth between adjacent blocks is `1.0mm`.
+- Default material relief depths are brick `2.4mm`, stone slab `2.4mm`, wood grain `1.6mm`, and wool `1.2mm`.
 - Rounded block edges.
 - Visible seams/boundaries between adjacent blocks.
 - Randomized natural material texture variants are generated when a material/block is chosen or created, then fixed on the placed block.
@@ -58,6 +61,7 @@ Model 3D Print is a macOS portable desktop 3D block modeling environment for cre
 - Preview uses material colors/appearance; STL export does not need color.
 - Built-in finished example projects.
 - Child education guardrails: large clear controls, confirmations for destructive actions, undo recovery for deletions, and tutorial/example-oriented entry points.
+- On restart, if autosave is newer than the last explicit save, the app prompts the user to recover the autosaved version.
 
 ## Out of Scope Until Confirmed
 

@@ -79,6 +79,11 @@ Production desktop app project. Requirements intake is in progress before design
 - Automatic material orientation alignment should run only when the user presses an organize/alignment button.
 - If automatic material orientation alignment may change apparent texture randomness or texture direction, the app should warn the user before applying it.
 - Built-in examples should be finished sample projects only, not guided interactive tutorials.
+- On app restart, if an autosave newer than the last explicit save exists, the app should prompt the user to recover the autosaved version.
+- Default rounded-edge radius should be `1.5mm`.
+- Default seam/gap recessed depth between adjacent blocks should be `1.0mm`.
+- Default material relief depths should be twice the initial suggested values: brick `2.4mm`, stone slab `2.4mm`, wood grain `1.6mm`, and wool `1.2mm`.
+- Deeper relief can improve visibility but may increase overhang/support issues, create fragile raised details, trap filament or resin in tight grooves, increase STL triangle count, and increase slicer processing time. Export repair must still preserve intentional relief.
 
 ## Confirmed Requirements
 
@@ -134,6 +139,9 @@ Production desktop app project. Requirements intake is in progress before design
 - Triangular prism blocks support all materials.
 - Material texture must be printable 3D surface detail, not only a rendered image.
 - Fixed default values should be used for rounded edge radius, seam depth, and texture relief depth in the first release.
+- Default rounded-edge radius is `1.5mm`.
+- Default seam/gap recessed depth between adjacent blocks is `1.0mm`.
+- Default material relief depths are brick `2.4mm`, stone slab `2.4mm`, wood grain `1.6mm`, and wool `1.2mm`.
 - Printable texture feature size should be no smaller than `0.5mm` and no larger than `10mm`.
 - Material relief texture should be generated on exposed faces only.
 - Block edges need rounded corners/radius.
@@ -148,6 +156,7 @@ Production desktop app project. Requirements intake is in progress before design
 - Preview should show material color/appearance; STL export does not need color.
 - Built-in finished example projects are required.
 - Child education guardrails are required: large clear controls, confirmations for destructive actions, undo recovery for deletions, and tutorial/example-oriented entry points.
+- On restart, the app should prompt the user to recover autosaved work when an autosave is newer than the last explicit save.
 
 ## Assumptions
 
@@ -160,14 +169,12 @@ Production desktop app project. Requirements intake is in progress before design
 - STL is a surface mesh format, so "solid" means a closed watertight mesh that slicers interpret as a volume. Actual internal infill percentage is chosen later in slicer software.
 - Export validation may fail if generated mesh has holes, non-manifold edges, self-intersections, inverted/ambiguous normals, zero-area/degenerate triangles, overlapping duplicate faces, disconnected accidental fragments, or geometry below the minimum printable texture feature size.
 - Automatic export repair/optimization should be conservative: it may improve mesh validity and reduce avoidable artifacts, but it must not erase visible material relief, rounded edges, or intentional seams.
+- Deeper relief improves visibility but can increase overhang/support needs, fragile raised features, trapped material in grooves, STL triangle count, and slicer time.
 
 ## Open Questions
 
-- Autosave recovery behavior after app restart.
-- Exact default rounded-edge radius.
-- Exact default seam/gap depth between adjacent blocks.
-- Exact default relief texture depth per material.
+No open questions remain from requirements intake.
 
 ## User Confirmation
 
-Partially confirmed. User answered the first clarification batch, but final confirmation is still pending after follow-up questions are resolved.
+Pending final user confirmation. No open requirements-intake questions remain.
