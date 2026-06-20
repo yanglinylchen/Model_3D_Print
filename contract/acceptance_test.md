@@ -23,8 +23,11 @@ Status: draft, awaiting requirements confirmation.
 - Triangular prism blocks occupy a full grid cell and cannot be overlapped with another triangular prism in the same cell.
 - A 30-degree triangular prism reaches about `28.87mm` height inside a `50mm` cell.
 - The app blocks direct placement above a 30-degree triangular prism and shows a warning unless the upper block has front/back/left/right/top support from another occupied block.
+- The app applies the same direct-above support restriction above a 45-degree triangular prism.
+- Triangular prism blocks can use every supported material.
 - User can rotate directional materials and triangular prism blocks.
-- User can choose automatic orientation alignment for neighboring same-material blocks.
+- User can press an organize/alignment button to align neighboring same-material block orientations.
+- If alignment may change texture direction or apparent random texture arrangement, the app warns before applying it.
 - Placed blocks display material-specific visual previews.
 - Exported STL includes real rounded block edges.
 - Exported STL includes printable relief texture geometry for each material.
@@ -36,7 +39,8 @@ Status: draft, awaiting requirements confirmation.
 - Exported STL is watertight/manifold, or export is blocked with a clear reason if repair cannot make the mesh valid.
 - Exported STL represents the model as closed solid volumes, not hollow open shells.
 - Multiple placed blocks retain visible boundary/seam detail in the exported mesh.
-- Repeated placement of natural materials produces varied but stable texture patterns.
+- Repeated placement of natural materials produces varied texture patterns that become stable after placement.
+- Copy/paste preserves the copied block's exact generated texture.
 - STL export can be opened by a standard slicer or mesh viewer.
-- Built-in examples are available from the app.
+- Built-in finished example projects are available from the app.
 - Destructive actions use child-education guardrails such as clear confirmation and undo recovery.

@@ -49,3 +49,15 @@ Reason: Users should not have to understand mesh topology to get printable outpu
 Decision: A 30-degree triangular prism rises only to about `28.87mm` inside a `50mm` cell. The cell directly above it is blocked unless the upper block is connected to another supporting occupied block on its front, back, left, right, or top side.
 
 Reason: The 30-degree prism does not provide a full-height flat support surface. The placement rule keeps the editor simple while preventing visually unsupported floating blocks.
+
+## ADR-009: Fixed Texture Instance Per Block
+
+Decision: Material randomization happens when a block/material instance is created. After placement, the generated texture stays fixed; copy/paste duplicates that exact texture instance.
+
+Reason: This preserves natural variation while keeping saved projects and copy/paste behavior predictable.
+
+## ADR-010: Manual Material Orientation Alignment
+
+Decision: Material orientation alignment runs only when the user presses an organize/alignment button, with a warning if the action may change texture direction or apparent random texture arrangement.
+
+Reason: Automatic changes could surprise users by altering a material look they intentionally chose. A manual button keeps the feature available while preserving user control.

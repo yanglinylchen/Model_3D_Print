@@ -42,17 +42,21 @@ Model 3D Print is a macOS portable desktop 3D block modeling environment for cre
 - Triangular prism blocks occupy one normal grid cell and cannot share that cell with another block.
 - A 30-degree triangular prism has a 30-degree sloped face inside one `50mm x 50mm x 50mm` cell. In local coordinates, the slope rises along one horizontal axis with `z = tan(30°) * x`, making the highest point about `28.87mm` at `x = 50mm`.
 - The cell directly above a 30-degree triangular prism is blocked by default. A block may be placed there only if that upper block is connected to another supporting occupied block on its front, back, left, right, or top side.
+- 45-degree triangular prism blocks use the same direct-above support restriction as 30-degree triangular prism blocks.
+- Triangular prism blocks support all materials.
 - Directional materials and triangular prism blocks support rotation.
-- The app offers an automatic material-orientation alignment option for neighboring blocks with the same material.
+- The app offers a user-triggered material-orientation alignment button for neighboring blocks with the same material.
+- If material orientation alignment may alter texture direction or apparent random texture arrangement, the app warns the user before applying it.
 - Real geometric texture relief for 3D printing, not only visual texture maps.
 - Material relief is generated on exposed faces only.
 - Printable texture feature size is at least `0.5mm` and no more than `10mm`.
 - Rounded edge radius, seam depth, and relief depth use fixed defaults in the first release.
 - Rounded block edges.
 - Visible seams/boundaries between adjacent blocks.
-- Randomized natural material texture variants per placed block.
+- Randomized natural material texture variants are generated when a material/block is chosen or created, then fixed on the placed block.
+- Copy/paste preserves the copied block's exact generated texture.
 - Preview uses material colors/appearance; STL export does not need color.
-- Built-in example projects.
+- Built-in finished example projects.
 - Child education guardrails: large clear controls, confirmations for destructive actions, undo recovery for deletions, and tutorial/example-oriented entry points.
 
 ## Out of Scope Until Confirmed

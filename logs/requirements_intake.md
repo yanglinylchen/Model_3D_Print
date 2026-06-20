@@ -72,6 +72,13 @@ Production desktop app project. Requirements intake is in progress before design
 - Child education guardrails should follow recommended defaults: large clear controls, confirmation for destructive actions, delete actions recoverable by undo, and built-in examples/tutorial-oriented entry points.
 - 30-degree triangular prism blocks use a `50mm x 50mm x 50mm` cell with a 30-degree sloped face. In local coordinates, the slope rises along one horizontal axis with `z = tan(30°) * x`, so the highest point at `x = 50mm` is about `28.87mm`.
 - Because a 30-degree triangular prism does not reach the full `50mm` cell height, placing a block directly above it is prohibited by default and should show a warning. A block A may be placed in that upper cell only when A is connected to another supporting occupied block on A's front, back, left, right, or top side.
+- 45-degree triangular prism blocks should use the same direct-above support restriction as 30-degree triangular prism blocks.
+- Triangular prism blocks should support all materials.
+- Material randomization happens only when a material/block is chosen or created. Once a block is placed, its texture is fixed.
+- Copy/paste copies the current block texture exactly, including the generated random texture.
+- Automatic material orientation alignment should run only when the user presses an organize/alignment button.
+- If automatic material orientation alignment may change apparent texture randomness or texture direction, the app should warn the user before applying it.
+- Built-in examples should be finished sample projects only, not guided interactive tutorials.
 
 ## Confirmed Requirements
 
@@ -123,6 +130,8 @@ Production desktop app project. Requirements intake is in progress before design
 - Triangular prism blocks occupy one normal grid cell and cannot share a cell with another triangular prism to form a cube.
 - 30-degree triangular prism blocks have a 30-degree sloped face and a maximum height of about `28.87mm` within the `50mm` cell.
 - The cell directly above a 30-degree triangular prism cannot receive a block unless the upper block has support from an occupied block connected to its front, back, left, right, or top side.
+- 45-degree triangular prism blocks use the same direct-above support restriction as 30-degree triangular prism blocks.
+- Triangular prism blocks support all materials.
 - Material texture must be printable 3D surface detail, not only a rendered image.
 - Fixed default values should be used for rounded edge radius, seam depth, and texture relief depth in the first release.
 - Printable texture feature size should be no smaller than `0.5mm` and no larger than `10mm`.
@@ -130,10 +139,14 @@ Production desktop app project. Requirements intake is in progress before design
 - Block edges need rounded corners/radius.
 - Adjacent blocks should preserve visible boundaries/seams after printing.
 - Wood, stone slab, wool, and similar natural material blocks should generate randomized texture variation for each placed block.
+- Material randomization happens only when a material/block is chosen or created. Placed blocks keep their generated texture fixed.
+- Copy/paste preserves the copied block's exact generated texture.
 - Directional materials and triangular prism blocks should support rotation.
 - When neighboring blocks use the same material, the app should offer automatic material orientation alignment.
+- Automatic material orientation alignment should run only from a user-triggered organize/alignment button.
+- If material alignment may change texture direction or apparent random texture arrangement, the app should warn the user before applying it.
 - Preview should show material color/appearance; STL export does not need color.
-- Built-in example projects are required.
+- Built-in finished example projects are required.
 - Child education guardrails are required: large clear controls, confirmations for destructive actions, undo recovery for deletions, and tutorial/example-oriented entry points.
 
 ## Assumptions
@@ -154,11 +167,6 @@ Production desktop app project. Requirements intake is in progress before design
 - Exact default rounded-edge radius.
 - Exact default seam/gap depth between adjacent blocks.
 - Exact default relief texture depth per material.
-- Whether material randomization should be deterministic by saved block seed, copied exactly when copy/pasting, and regenerated only when the user asks.
-- Exact behavior of automatic material orientation alignment: per placement, per selected group of neighboring same-material blocks, or a manual command.
-- Whether 45-degree triangular prism blocks should use the same direct-above support restriction as 30-degree triangular prism blocks.
-- Whether triangular prism blocks receive all materials or only roof-friendly material types.
-- Whether built-in examples should include guided tutorials, finished sample projects, or both.
 
 ## User Confirmation
 
