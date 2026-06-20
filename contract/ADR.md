@@ -14,3 +14,14 @@ Decision: Treat the first product concept as a voxel-grid editor unless the user
 
 Reason: The requested Minecraft-like interaction, material blocks, and grid placement naturally fit a voxel data model. STL export can then convert voxel/material data into a printable mesh.
 
+## ADR-003: macOS Portable First Release
+
+Decision: Target macOS only for the first release and package as a no-install portable app.
+
+Reason: The user explicitly chose macOS and portable distribution. This narrows packaging risk while preserving the production-app workflow.
+
+## ADR-004: Geometry-First STL Export
+
+Decision: STL export must produce one combined mesh containing rounded edges, visible seams, and material relief as actual geometry.
+
+Reason: STL files do not reliably carry visual texture/material data. The printable result depends on geometry, so textures cannot be only image maps or preview shaders.

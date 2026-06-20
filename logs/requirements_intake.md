@@ -31,7 +31,17 @@ Production desktop app project. Requirements intake is in progress before design
 
 ## User Answers
 
-No follow-up answers yet.
+- First release target OS: macOS only.
+- Distribution format: no-install portable app.
+- Intended users: primarily children's education, also usable by general 3D-print hobbyists.
+- Modeling unit: millimeters.
+- Default block size: `50mm x 50mm x 50mm`.
+- Workspace size: X/Y/Z grid counts only. Printer scaling and printer-bed fitting can be handled after STL export.
+- Shrinking workspace behavior: if blocks would exceed the new boundary, show a warning and prevent the shrink.
+- First-release editing tools: include copy/paste. Multi-select, fill, and mirror are not required.
+- Control scheme: WASD camera rotation, mouse wheel zoom, mouse right-button orbit, and arrow keys for cursor/block-position movement are acceptable.
+- STL export: export the whole design as one combined STL. All material relief textures must be included as geometry, not exported as flat cubes.
+- UI language: Taiwan Traditional Chinese only.
 
 ## Confirmed Requirements
 
@@ -39,16 +49,29 @@ No follow-up answers yet.
 - Follow the ToGo Tech project development flow.
 - Start with requirements discussion before implementation.
 - Desktop app.
+- First release targets macOS only.
+- App should be distributed as a no-install portable build.
+- Primary audience is children's education; secondary audience is general 3D-print hobbyists.
+- UI language is Taiwan Traditional Chinese.
 - 3D modeling environment.
 - User can define workspace size.
 - User can change workspace size during modeling.
+- Workspace dimensions are X/Y/Z grid counts.
+- Modeling/export unit is millimeters.
+- Default block size is `50mm x 50mm x 50mm`.
+- Printer-bed fit and final print scaling are post-export concerns, not first-release workspace constraints.
+- If workspace resizing would place existing blocks outside the new boundary, the app should warn the user and prevent the shrink.
 - Mouse operation is required.
 - Keyboard operation is required.
 - Combined mouse and keyboard operation should be supported.
-- Camera/view rotation controls should include keyboard and/or on-screen controls.
-- Object/block placement should support keyboard and/or mouse spatial selection.
+- Camera/view controls should support WASD camera rotation, mouse-wheel zoom, mouse right-button orbit, and/or on-screen controls.
+- Object/block placement should support mouse placement and keyboard cursor movement with arrow keys.
 - Visual style and interaction model should be similar to Minecraft block building.
+- Copy/paste is required.
+- Multi-select, fill, and mirror tools are not required for the first release.
 - STL export is required for 3D printing.
+- STL export should combine the whole design into one STL file.
+- STL export must include material relief texture geometry and may not flatten materials into plain cubes.
 - At least four material block types: brick, wood, stone slab, wool.
 - Material texture must be printable 3D surface detail, not only a rendered image.
 - Block edges need rounded corners/radius.
@@ -62,21 +85,29 @@ No follow-up answers yet.
 - STL export should generate actual mesh geometry for rounded edges and relief textures.
 - The preview can show color/material appearance even if STL export focuses on geometry.
 - Randomized textures should be stored with each block so exported and reopened models remain stable.
+- macOS portable packaging can be implemented before broader platform packaging.
 
 ## Open Questions
 
-- Required OS and packaging format.
-- Real-world dimensions and grid/export scale.
-- Workspace resize behavior when existing blocks exceed new bounds.
-- Scope of editing tools for the first release.
-- Exact input control scheme.
-- Native project save/open requirements.
-- STL export structure for multi-material designs.
-- Texture controls and default relief depth.
-- Performance/model size target.
-- UI language.
+- Whether native project save/open is required in the first release.
+- Whether autosave is required for classroom use.
+- Whether undo/redo is required and how many steps should be retained.
+- Whether copy/paste should operate on a single selected block only, or support a copied rectangular selection later.
+- Whether the app should include delete/erase mode in the first release.
+- Whether block rotation is needed for directional materials such as wood grain or brick courses.
+- Default workspace size and maximum supported X/Y/Z grid size.
+- Default rounded-edge radius and whether users may edit it.
+- Default seam/gap depth between adjacent blocks and whether users may edit it.
+- Default relief texture depth per material and whether users may edit texture intensity.
+- Whether relief geometry should appear on all block faces or only exposed faces.
+- Minimum printable feature size target, such as `0.4mm`, to avoid textures too fine for common printers.
+- Whether the app should validate meshes as watertight/manifold before export.
+- Whether the preview should show color/material appearance even though STL exports geometry only.
+- Whether material randomization should be deterministic per saved project.
+- Whether a built-in tutorial or classroom-friendly sample projects are required.
+- Whether there should be child-safe guardrails such as simplified mode, large buttons, limited destructive actions, or confirmation prompts.
+- Performance target: expected maximum number of blocks in first-release models.
 
 ## User Confirmation
 
-Not confirmed. The workflow must pause here until the user answers open questions and confirms the summarized requirements.
-
+Partially confirmed. User answered the first clarification batch, but final confirmation is still pending after follow-up questions are resolved.
