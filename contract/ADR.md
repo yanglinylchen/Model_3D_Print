@@ -25,3 +25,15 @@ Reason: The user explicitly chose macOS and portable distribution. This narrows 
 Decision: STL export must produce one combined mesh containing rounded edges, visible seams, and material relief as actual geometry.
 
 Reason: STL files do not reliably carry visual texture/material data. The printable result depends on geometry, so textures cannot be only image maps or preview shaders.
+
+## ADR-005: Closed-Volume Mesh Semantics
+
+Decision: Treat exported blocks as closed watertight volumes rather than hollow open shells.
+
+Reason: STL represents surfaces, but slicers infer printable volume from a closed manifold shell. The app should export closed geometry; slicer settings remain responsible for physical infill percentage.
+
+## ADR-006: Cell Occupancy Remains One Block Per Cell
+
+Decision: Every cube or triangular prism occupies one full grid cell for editing and collision purposes.
+
+Reason: The user explicitly does not want two triangular prism blocks to stack inside one cube cell. Keeping one block per cell preserves Minecraft-like simplicity for education users.

@@ -42,6 +42,26 @@ Production desktop app project. Requirements intake is in progress before design
 - Control scheme: WASD camera rotation, mouse wheel zoom, mouse right-button orbit, and arrow keys for cursor/block-position movement are acceptable.
 - STL export: export the whole design as one combined STL. All material relief textures must be included as geometry, not exported as flat cubes.
 - UI language: Taiwan Traditional Chinese only.
+- Native project save/open is required.
+- Autosave is required.
+- Undo/redo is required.
+- Delete/erase mode is required.
+- User can select an existing block and change its material.
+- Copy/paste copies one block, including the material and generated texture state of that block.
+- Default workspace size: `1000mm x 1000mm x 1000mm`.
+- Maximum first-release workspace size: `10000mm x 10000mm x 10000mm`.
+- Rounded edge radius, seam depth, and material relief depth should use fixed defaults for the first release and do not need user-adjustable controls yet.
+- Material relief textures should be generated on exposed faces only.
+- Directional materials and blocks should support rotation.
+- When neighboring blocks use the same material, the app should offer an option to automatically align material direction/orientation into a visually coherent direction.
+- STL export should validate that the mesh is watertight/manifold before export or warn/block when invalid.
+- Preview should use colors/material appearance, but STL export does not need color.
+- Built-in examples are required.
+- Add triangular prism block shapes for roof-like sloped surfaces.
+- Triangular prism blocks should include 30-degree and 45-degree variants.
+- Triangular prism blocks occupy the same grid cell volume as a standard cube block.
+- Two triangular prism blocks cannot be stacked in the same grid cell to form a cube.
+- Exported STL should represent the model as closed solid volumes, not hollow open shells.
 
 ## Confirmed Requirements
 
@@ -59,24 +79,42 @@ Production desktop app project. Requirements intake is in progress before design
 - Workspace dimensions are X/Y/Z grid counts.
 - Modeling/export unit is millimeters.
 - Default block size is `50mm x 50mm x 50mm`.
+- Default workspace size is `1000mm x 1000mm x 1000mm`, equivalent to `20 x 20 x 20` default 50mm cells.
+- Maximum first-release workspace size is `10000mm x 10000mm x 10000mm`, equivalent to `200 x 200 x 200` default 50mm cells.
 - Printer-bed fit and final print scaling are post-export concerns, not first-release workspace constraints.
 - If workspace resizing would place existing blocks outside the new boundary, the app should warn the user and prevent the shrink.
+- Native project save/open is required.
+- Autosave is required.
 - Mouse operation is required.
 - Keyboard operation is required.
 - Combined mouse and keyboard operation should be supported.
 - Camera/view controls should support WASD camera rotation, mouse-wheel zoom, mouse right-button orbit, and/or on-screen controls.
 - Object/block placement should support mouse placement and keyboard cursor movement with arrow keys.
 - Visual style and interaction model should be similar to Minecraft block building.
+- Undo/redo is required.
+- Delete/erase mode is required.
 - Copy/paste is required.
+- Copy/paste should copy one block including material and generated texture state.
+- Users can select an existing block and change its material.
 - Multi-select, fill, and mirror tools are not required for the first release.
 - STL export is required for 3D printing.
 - STL export should combine the whole design into one STL file.
 - STL export must include material relief texture geometry and may not flatten materials into plain cubes.
+- STL export should produce a watertight/manifold closed-volume mesh suitable for slicers.
+- STL export should represent blocks as solid closed geometry, not hollow open shells; printer infill remains controlled by the slicer.
 - At least four material block types: brick, wood, stone slab, wool.
+- Add triangular prism block shapes for roof-like slopes, with 30-degree and 45-degree variants.
+- Triangular prism blocks occupy one normal grid cell and cannot share a cell with another triangular prism to form a cube.
 - Material texture must be printable 3D surface detail, not only a rendered image.
+- Fixed default values should be used for rounded edge radius, seam depth, and texture relief depth in the first release.
+- Material relief texture should be generated on exposed faces only.
 - Block edges need rounded corners/radius.
 - Adjacent blocks should preserve visible boundaries/seams after printing.
 - Wood, stone slab, wool, and similar natural material blocks should generate randomized texture variation for each placed block.
+- Directional materials and triangular prism blocks should support rotation.
+- When neighboring blocks use the same material, the app should offer automatic material orientation alignment.
+- Preview should show material color/appearance; STL export does not need color.
+- Built-in example projects are required.
 
 ## Assumptions
 
@@ -86,25 +124,23 @@ Production desktop app project. Requirements intake is in progress before design
 - The preview can show color/material appearance even if STL export focuses on geometry.
 - Randomized textures should be stored with each block so exported and reopened models remain stable.
 - macOS portable packaging can be implemented before broader platform packaging.
+- STL is a surface mesh format, so "solid" means a closed watertight mesh that slicers interpret as a volume. Actual internal infill percentage is chosen later in slicer software.
 
 ## Open Questions
 
-- Whether native project save/open is required in the first release.
-- Whether autosave is required for classroom use.
-- Whether undo/redo is required and how many steps should be retained.
-- Whether copy/paste should operate on a single selected block only, or support a copied rectangular selection later.
-- Whether the app should include delete/erase mode in the first release.
-- Whether block rotation is needed for directional materials such as wood grain or brick courses.
-- Default workspace size and maximum supported X/Y/Z grid size.
-- Default rounded-edge radius and whether users may edit it.
-- Default seam/gap depth between adjacent blocks and whether users may edit it.
-- Default relief texture depth per material and whether users may edit texture intensity.
-- Whether relief geometry should appear on all block faces or only exposed faces.
+- Required undo/redo history depth.
+- Autosave interval and recovery behavior.
+- Native project file extension/name.
+- Exact default rounded-edge radius.
+- Exact default seam/gap depth between adjacent blocks.
+- Exact default relief texture depth per material.
 - Minimum printable feature size target, such as `0.4mm`, to avoid textures too fine for common printers.
-- Whether the app should validate meshes as watertight/manifold before export.
-- Whether the preview should show color/material appearance even though STL exports geometry only.
-- Whether material randomization should be deterministic per saved project.
-- Whether a built-in tutorial or classroom-friendly sample projects are required.
+- Whether invalid STL geometry should block export or allow export with a warning.
+- Whether material randomization should be deterministic by saved block seed, copied exactly when copy/pasting, and regenerated only when the user asks.
+- Exact behavior of automatic material orientation alignment: per placement, per selected group of neighboring same-material blocks, or a manual command.
+- Exact triangle block geometry for the 30-degree roof block, because a 30-degree slope inside a 50mm-tall single cell implies a non-full-width triangular prism unless the footprint/depth relation is defined.
+- Whether triangular prism blocks receive all materials or only roof-friendly material types.
+- Whether built-in examples should include guided tutorials, finished sample projects, or both.
 - Whether there should be child-safe guardrails such as simplified mode, large buttons, limited destructive actions, or confirmation prompts.
 - Performance target: expected maximum number of blocks in first-release models.
 
