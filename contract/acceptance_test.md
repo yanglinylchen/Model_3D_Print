@@ -7,9 +7,12 @@ Status: draft, awaiting requirements confirmation.
 - User can create a new workspace with chosen X/Y/Z dimensions.
 - Default workspace is `1000mm x 1000mm x 1000mm`.
 - User cannot create or resize beyond `10000mm x 10000mm x 10000mm` in the first release.
+- User cannot exceed 10000 placed blocks in the first release.
 - User can resize the workspace after placing blocks.
 - If resizing smaller would exclude existing blocks, the app warns the user and does not shrink the workspace.
 - User can save, reopen, and autosave a native project.
+- Native project files use the `.m3dp` extension.
+- Autosave runs once per minute.
 - User can rotate/orbit the camera and place blocks using supported mouse/keyboard controls.
 - User can undo and redo up to 50 edit steps.
 - User can delete/erase blocks.
@@ -23,6 +26,7 @@ Status: draft, awaiting requirements confirmation.
 - Placed blocks display material-specific visual previews.
 - Exported STL includes real rounded block edges.
 - Exported STL includes printable relief texture geometry for each material.
+- Relief texture features are no smaller than `0.5mm` and no larger than `10mm`.
 - Exported STL includes relief texture only on exposed faces.
 - Exported STL is one combined model file.
 - Exported STL is not a flat-cube representation; material texture relief is present in the mesh geometry.
@@ -32,3 +36,4 @@ Status: draft, awaiting requirements confirmation.
 - Repeated placement of natural materials produces varied but stable texture patterns.
 - STL export can be opened by a standard slicer or mesh viewer.
 - Built-in examples are available from the app.
+- Destructive actions use child-education guardrails such as clear confirmation and undo recovery.

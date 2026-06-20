@@ -44,6 +44,8 @@ Production desktop app project. Requirements intake is in progress before design
 - UI language: Taiwan Traditional Chinese only.
 - Native project save/open is required.
 - Autosave is required.
+- Autosave interval should be 1 minute.
+- Native project file extension should be `.m3dp`.
 - Undo/redo is required.
 - Undo/redo history depth should be 50 steps.
 - Delete/erase mode is required.
@@ -51,7 +53,9 @@ Production desktop app project. Requirements intake is in progress before design
 - Copy/paste copies one block, including the material and generated texture state of that block.
 - Default workspace size: `1000mm x 1000mm x 1000mm`.
 - Maximum first-release workspace size: `10000mm x 10000mm x 10000mm`.
+- First-release placed-block count limit should be 10000 blocks.
 - Rounded edge radius, seam depth, and material relief depth should use fixed defaults for the first release and do not need user-adjustable controls yet.
+- Printable texture feature size should be at least `0.5mm` for clarity and no more than `10mm` for relief size.
 - Material relief textures should be generated on exposed faces only.
 - Directional materials and blocks should support rotation.
 - When neighboring blocks use the same material, the app should offer an option to automatically align material direction/orientation into a visually coherent direction.
@@ -63,6 +67,8 @@ Production desktop app project. Requirements intake is in progress before design
 - Triangular prism blocks occupy the same grid cell volume as a standard cube block.
 - Two triangular prism blocks cannot be stacked in the same grid cell to form a cube.
 - Exported STL should represent the model as closed solid volumes, not hollow open shells.
+- Child education guardrails should follow recommended defaults: large clear controls, confirmation for destructive actions, delete actions recoverable by undo, and built-in examples/tutorial-oriented entry points.
+- 30-degree triangular prism blocks mean triangular prisms whose sloped face is 30 degrees, but the exact coordinate geometry still needs a spatial/math definition.
 
 ## Confirmed Requirements
 
@@ -82,10 +88,13 @@ Production desktop app project. Requirements intake is in progress before design
 - Default block size is `50mm x 50mm x 50mm`.
 - Default workspace size is `1000mm x 1000mm x 1000mm`, equivalent to `20 x 20 x 20` default 50mm cells.
 - Maximum first-release workspace size is `10000mm x 10000mm x 10000mm`, equivalent to `200 x 200 x 200` default 50mm cells.
+- First-release placed-block count limit is 10000 blocks.
 - Printer-bed fit and final print scaling are post-export concerns, not first-release workspace constraints.
 - If workspace resizing would place existing blocks outside the new boundary, the app should warn the user and prevent the shrink.
 - Native project save/open is required.
 - Autosave is required.
+- Autosave should run once per minute.
+- Native project files should use the `.m3dp` extension.
 - Mouse operation is required.
 - Keyboard operation is required.
 - Combined mouse and keyboard operation should be supported.
@@ -109,6 +118,7 @@ Production desktop app project. Requirements intake is in progress before design
 - Triangular prism blocks occupy one normal grid cell and cannot share a cell with another triangular prism to form a cube.
 - Material texture must be printable 3D surface detail, not only a rendered image.
 - Fixed default values should be used for rounded edge radius, seam depth, and texture relief depth in the first release.
+- Printable texture feature size should be no smaller than `0.5mm` and no larger than `10mm`.
 - Material relief texture should be generated on exposed faces only.
 - Block edges need rounded corners/radius.
 - Adjacent blocks should preserve visible boundaries/seams after printing.
@@ -117,6 +127,7 @@ Production desktop app project. Requirements intake is in progress before design
 - When neighboring blocks use the same material, the app should offer automatic material orientation alignment.
 - Preview should show material color/appearance; STL export does not need color.
 - Built-in example projects are required.
+- Child education guardrails are required: large clear controls, confirmations for destructive actions, undo recovery for deletions, and tutorial/example-oriented entry points.
 
 ## Assumptions
 
@@ -127,23 +138,20 @@ Production desktop app project. Requirements intake is in progress before design
 - Randomized textures should be stored with each block so exported and reopened models remain stable.
 - macOS portable packaging can be implemented before broader platform packaging.
 - STL is a surface mesh format, so "solid" means a closed watertight mesh that slicers interpret as a volume. Actual internal infill percentage is chosen later in slicer software.
+- Export validation may fail if generated mesh has holes, non-manifold edges, self-intersections, inverted/ambiguous normals, zero-area/degenerate triangles, overlapping duplicate faces, disconnected accidental fragments, or geometry below the minimum printable texture feature size.
 
 ## Open Questions
 
-- Autosave interval and recovery behavior.
-- Native project file extension/name.
+- Autosave recovery behavior after app restart.
 - Exact default rounded-edge radius.
 - Exact default seam/gap depth between adjacent blocks.
 - Exact default relief texture depth per material.
-- Minimum printable feature size target, such as `0.4mm`, to avoid textures too fine for common printers.
 - Whether invalid STL geometry should block export or allow export with a warning.
 - Whether material randomization should be deterministic by saved block seed, copied exactly when copy/pasting, and regenerated only when the user asks.
 - Exact behavior of automatic material orientation alignment: per placement, per selected group of neighboring same-material blocks, or a manual command.
 - Exact triangle block geometry for the 30-degree roof block, because a 30-degree slope inside a 50mm-tall single cell implies a non-full-width triangular prism unless the footprint/depth relation is defined.
 - Whether triangular prism blocks receive all materials or only roof-friendly material types.
 - Whether built-in examples should include guided tutorials, finished sample projects, or both.
-- Whether there should be child-safe guardrails such as simplified mode, large buttons, limited destructive actions, or confirmation prompts.
-- Performance target: expected maximum number of blocks in first-release models.
 
 ## User Confirmation
 

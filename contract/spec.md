@@ -16,6 +16,7 @@ Model 3D Print is a macOS portable desktop 3D block modeling environment for cre
 - Default block size is `50mm x 50mm x 50mm`.
 - Default workspace size is `1000mm x 1000mm x 1000mm` (`20 x 20 x 20` default cells).
 - Maximum first-release workspace size is `10000mm x 10000mm x 10000mm` (`200 x 200 x 200` default cells).
+- First-release placed-block count limit is 10000 blocks.
 - macOS-only first release.
 - No-install portable distribution.
 - Taiwan Traditional Chinese UI.
@@ -25,7 +26,8 @@ Model 3D Print is a macOS portable desktop 3D block modeling environment for cre
 - Minecraft-like grid block placement.
 - WASD camera rotation, mouse-wheel zoom, mouse right-button orbit, and arrow-key block-position movement are acceptable first-release controls.
 - Native project save/open.
-- Autosave.
+- Native project files use the `.m3dp` extension.
+- Autosave once per minute.
 - Undo/redo with 50 steps of edit history.
 - Delete/erase mode.
 - Select an existing block and change its material.
@@ -40,12 +42,14 @@ Model 3D Print is a macOS portable desktop 3D block modeling environment for cre
 - The app offers an automatic material-orientation alignment option for neighboring blocks with the same material.
 - Real geometric texture relief for 3D printing, not only visual texture maps.
 - Material relief is generated on exposed faces only.
+- Printable texture feature size is at least `0.5mm` and no more than `10mm`.
 - Rounded edge radius, seam depth, and relief depth use fixed defaults in the first release.
 - Rounded block edges.
 - Visible seams/boundaries between adjacent blocks.
 - Randomized natural material texture variants per placed block.
 - Preview uses material colors/appearance; STL export does not need color.
 - Built-in example projects.
+- Child education guardrails: large clear controls, confirmations for destructive actions, undo recovery for deletions, and tutorial/example-oriented entry points.
 
 ## Out of Scope Until Confirmed
 
