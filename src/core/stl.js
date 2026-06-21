@@ -38,13 +38,19 @@ export function reliefTrianglesForBlock(project, block) {
   const boxes = [];
 
   if (isFaceExposed(project, block, "top")) {
-    boxes.push(...topReliefBoxes(block.material, x, y, top, size, depth));
+    boxes.push(...faceReliefBoxes(block, "top", x, y, z, size, top - z, depth));
   }
   if (isFaceExposed(project, block, "east")) {
-    boxes.push(...sideReliefBoxes(block.material, x + size, y, z, "east", size, depth));
+    boxes.push(...faceReliefBoxes(block, "east", x, y, z, size, top - z, depth));
+  }
+  if (isFaceExposed(project, block, "west")) {
+    boxes.push(...faceReliefBoxes(block, "west", x, y, z, size, top - z, depth));
   }
   if (isFaceExposed(project, block, "north")) {
-    boxes.push(...sideReliefBoxes(block.material, x, y + size, z, "north", size, depth));
+    boxes.push(...faceReliefBoxes(block, "north", x, y, z, size, top - z, depth));
+  }
+  if (isFaceExposed(project, block, "south")) {
+    boxes.push(...faceReliefBoxes(block, "south", x, y, z, size, top - z, depth));
   }
   return boxes.flatMap((box) => cuboidTriangles(box.min, box.max));
 }
@@ -115,47 +121,6 @@ function cuboidTriangles(min, max) {
   ]);
 }
 
-function topReliefBoxes(material, x, y, z, size, depth) {
-  if (material === "brick") {
-    return [
-      reliefBox(x + 8, y + 22, z, x + 42, y + 25, z + depth),
-      reliefBox(x + 24, y + 6, z, x + 27, y + 22, z + depth),
-      reliefBox(x + 12, y + 36, z, x + 46, y + 39, z + depth)
-    ];
-  }
-  if (material === "wood") {
-    return [
-      reliefBox(x + 6, y + 12, z, x + 44, y + 15, z + depth),
-      reliefBox(x + 12, y + 26, z, x + 48, y + 29, z + depth),
-      reliefBox(x + 8, y + 38, z, x + 38, y + 41, z + depth)
-    ];
-  }
-  if (material === "stone_slab") {
-    return [
-      reliefBox(x + 7, y + 10, z, x + 22, y + 15, z + depth),
-      reliefBox(x + 30, y + 18, z, x + 44, y + 22, z + depth),
-      reliefBox(x + 16, y + 36, z, x + 40, y + 40, z + depth)
-    ];
-  }
-  return [
-    reliefBox(x + 8, y + 12, z, x + 42, y + 14, z + depth),
-    reliefBox(x + 10, y + 24, z, x + 46, y + 26, z + depth),
-    reliefBox(x + 6, y + 36, z, x + 38, y + 38, z + depth)
-  ];
-}
-
-function sideReliefBoxes(material, x, y, z, face, size, depth) {
-  const spans = material === "wood"
-    ? [[10, 13], [24, 27], [38, 41]]
-    : [[12, 16], [28, 32], [40, 44]];
-  return spans.map(([a, b]) => {
-    if (face === "east") {
-      return reliefBox(x, y + a, z + 10, x + depth, y + b, z + size - 10);
-    }
-    return reliefBox(x + a, y, z + 10, x + b, y + depth, z + size - 10);
-  });
-}
-
 function reliefBox(x1, y1, z1, x2, y2, z2) {
   return {
     min: [Math.min(x1, x2), Math.min(y1, y2), Math.min(z1, z2)],
@@ -167,10 +132,169 @@ function isFaceExposed(project, block, face) {
   const offsets = {
     top: [0, 0, 1],
     east: [1, 0, 0],
-    north: [0, 1, 0]
+    west: [-1, 0, 0],
+    north: [0, 1, 0],
+    south: [0, -1, 0]
   };
   const [dx, dy, dz] = offsets[face];
   return !project.blocks.some((other) => other.x === block.x + dx && other.y === block.y + dy && other.z === block.z + dz);
+}
+
+function faceReliefBoxes(block, face, x, y, z, size, height, depth) {
+  const seed = `${block.textureSeed || block.material}-${face}-${block.rotation || 0}`;
+  const rects = materialReliefRects(block.material, seed, size, Math.max(height, PRINT_DEFAULTS.minFeatureMm));
+  return rects.map((rect) => rectToFaceBox(rect, face, x, y, z, size, height, depth));
+}
+
+function materialReliefRects(material, seed, width, height) {
+  if (material === "brick") return brickReliefRects(seed, width, height);
+  if (material === "wood") return woodReliefRects(seed, width, height);
+  if (material === "stone_slab") return stoneReliefRects(seed, width, height);
+  return woolReliefRects(seed, width, height);
+}
+
+function brickReliefRects(seed, width, height) {
+  const rng = seededRandom(seed);
+  const rects = [];
+  const mortar = 1.35;
+  const rows = height < 35 ? 3 : 4;
+  const rowHeight = (height - mortar * (rows + 1)) / rows;
+
+  for (let row = 0; row < rows; row += 1) {
+    const v1 = mortar + row * (rowHeight + mortar);
+    const v2 = v1 + rowHeight;
+    const cuts = row % 2 === 0
+      ? [0, width * (0.48 + rng() * 0.08), width]
+      : [0, width * (0.30 + rng() * 0.05), width * (0.66 + rng() * 0.06), width];
+    for (let i = 0; i < cuts.length - 1; i += 1) {
+      pushRect(rects, cuts[i] + mortar, v1, cuts[i + 1] - mortar, v2, 0.92 + rng() * 0.16);
+    }
+  }
+  return rects;
+}
+
+function woodReliefRects(seed, width, height) {
+  const rng = seededRandom(seed);
+  const rects = [];
+  const lines = 9;
+  for (let i = 0; i < lines; i += 1) {
+    let cursor = 4 + rng() * 4;
+    const base = 4 + i * ((height - 8) / (lines - 1)) + (rng() - 0.5) * 2;
+    const thickness = 0.8 + rng() * 1.2;
+    while (cursor < width - 5) {
+      const segment = 8 + rng() * 13;
+      const drift = (rng() - 0.5) * 3;
+      pushRect(rects, cursor, base + drift, Math.min(width - 4, cursor + segment), base + drift + thickness, 0.45 + rng() * 0.35);
+      cursor += segment + 2 + rng() * 5;
+    }
+  }
+  const knots = 1 + Math.floor(rng() * 2);
+  for (let i = 0; i < knots; i += 1) {
+    const cx = 14 + rng() * (width - 28);
+    const cy = 14 + rng() * (height - 28);
+    pushRect(rects, cx - 7, cy - 1.2, cx + 7, cy + 1.2, 0.9);
+    pushRect(rects, cx - 1.2, cy - 5, cx + 1.2, cy + 5, 0.75);
+    pushRect(rects, cx - 4, cy - 4, cx + 4, cy - 2.2, 0.55);
+    pushRect(rects, cx - 4, cy + 2.2, cx + 4, cy + 4, 0.55);
+  }
+  return rects;
+}
+
+function stoneReliefRects(seed, width, height) {
+  const rng = seededRandom(seed);
+  const rects = [];
+  const gap = 1.2;
+  const columns = jitteredCuts(width, [0, 0.31, 0.58, 0.82, 1], rng, 2.8);
+  const rows = jitteredCuts(height, [0, 0.28, 0.55, 0.78, 1], rng, 2.6);
+  for (let row = 0; row < rows.length - 1; row += 1) {
+    for (let col = 0; col < columns.length - 1; col += 1) {
+      const inset = gap + rng() * 0.8;
+      pushRect(
+        rects,
+        columns[col] + inset,
+        rows[row] + inset,
+        columns[col + 1] - inset,
+        rows[row + 1] - inset,
+        0.78 + rng() * 0.22
+      );
+    }
+  }
+  return rects;
+}
+
+function woolReliefRects(seed, width, height) {
+  const rng = seededRandom(seed);
+  const rects = [];
+  const spacing = 5.5;
+  for (let v = 4; v < height - 4; v += spacing) {
+    const offset = (rng() - 0.5) * 1.5;
+    pushRect(rects, 4, v + offset, width - 4, v + offset + 0.9, 0.45);
+  }
+  for (let u = 5.5; u < width - 4; u += spacing) {
+    const offset = (rng() - 0.5) * 1.5;
+    pushRect(rects, u + offset, 4, u + offset + 0.85, height - 4, 0.35);
+  }
+  for (let i = 0; i < 10; i += 1) {
+    const u = 5 + rng() * (width - 10);
+    const v = 5 + rng() * (height - 10);
+    pushRect(rects, u, v, u + 3 + rng() * 4, v + 0.7, 0.5);
+  }
+  return rects;
+}
+
+function pushRect(rects, u1, v1, u2, v2, heightScale = 1) {
+  const minU = Math.max(PRINT_DEFAULTS.minFeatureMm, Math.min(u1, u2));
+  const maxU = Math.min(CELL_SIZE_MM - PRINT_DEFAULTS.minFeatureMm, Math.max(u1, u2));
+  const minV = Math.max(PRINT_DEFAULTS.minFeatureMm, Math.min(v1, v2));
+  const maxV = Math.min(CELL_SIZE_MM - PRINT_DEFAULTS.minFeatureMm, Math.max(v1, v2));
+  if (maxU - minU < PRINT_DEFAULTS.minFeatureMm || maxV - minV < PRINT_DEFAULTS.minFeatureMm) return;
+  rects.push({ u1: minU, v1: minV, u2: maxU, v2: maxV, heightScale });
+}
+
+function rectToFaceBox(rect, face, x, y, z, size, height, depth) {
+  const relief = Math.max(PRINT_DEFAULTS.minFeatureMm, depth * rect.heightScale);
+  const top = z + height;
+  if (face === "top") {
+    return reliefBox(x + rect.u1, y + rect.v1, top, x + rect.u2, y + rect.v2, top + relief);
+  }
+  if (face === "east") {
+    return reliefBox(x + size, y + rect.u1, z + rect.v1, x + size + relief, y + rect.u2, z + rect.v2);
+  }
+  if (face === "west") {
+    return reliefBox(x - relief, y + rect.u1, z + rect.v1, x, y + rect.u2, z + rect.v2);
+  }
+  if (face === "north") {
+    return reliefBox(x + rect.u1, y + size, z + rect.v1, x + rect.u2, y + size + relief, z + rect.v2);
+  }
+  return reliefBox(x + rect.u1, y - relief, z + rect.v1, x + rect.u2, y, z + rect.v2);
+}
+
+function jitteredCuts(size, fractions, rng, jitter) {
+  return fractions.map((fraction, index) => {
+    if (index === 0) return 0;
+    if (index === fractions.length - 1) return size;
+    return size * fraction + (rng() - 0.5) * jitter;
+  }).sort((a, b) => a - b);
+}
+
+function seededRandom(seed) {
+  let value = hashString(seed);
+  return () => {
+    value |= 0;
+    value = (value + 0x6D2B79F5) | 0;
+    let t = Math.imul(value ^ (value >>> 15), 1 | value);
+    t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function hashString(input) {
+  let hash = 2166136261;
+  for (const char of String(input)) {
+    hash ^= char.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
 }
 
 function triangularPrismTriangles(x, y, z, height, block) {

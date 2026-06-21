@@ -31,6 +31,37 @@ test("rounded cube STL keeps full 50mm block footprint without shrink gap", () =
   assert.ok(vertices.some((vertex) => vertex.y === 50));
 });
 
+test("material STL export generates dense procedural relief geometry", () => {
+  const project = createProject({ name: "Material Relief" });
+  const placed = setBlock(project, makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    material: "brick",
+    textureSeed: "brick-test-seed"
+  }));
+  const exported = exportAsciiStl(placed.project);
+  assert.equal(exported.ok, true);
+  assert.ok(exported.triangleCount > 800, `expected dense material geometry, got ${exported.triangleCount}`);
+  assert.ok(exported.stl.includes("vertex 1.35"), "expected mortar-offset brick relief vertices");
+});
+
+test("all built-in materials export relief above a plain rounded block", () => {
+  for (const material of ["brick", "wood", "stone_slab", "wool"]) {
+    const project = createProject({ name: `${material} Relief` });
+    const placed = setBlock(project, makeBlock({
+      x: 0,
+      y: 0,
+      z: 0,
+      material,
+      textureSeed: `${material}-test-seed`
+    }));
+    const exported = exportAsciiStl(placed.project);
+    assert.equal(exported.ok, true);
+    assert.ok(exported.triangleCount > 500, `${material} should export visible geometric relief`);
+  }
+});
+
 test("blocks STL export for an empty model", () => {
   const exported = exportAsciiStl(createProject());
   assert.equal(exported.ok, false);
