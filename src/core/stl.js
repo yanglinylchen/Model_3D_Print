@@ -62,7 +62,9 @@ export function reliefTrianglesForBlock(project, block) {
     return [];
   }
   if (block.shape === "stair_step") {
-    return block.material === "brick" ? stairReliefTriangles(project, block, x, y, z) : [];
+    if (block.material === "brick") return stairReliefTriangles(project, block, x, y, z);
+    if (block.material === "rubble_stone") return stairRubbleStoneReliefTriangles(project, block, x, y, z);
+    return [];
   }
   if (block.shape !== "cube") return [];
   const triangles = [];
@@ -368,6 +370,54 @@ function stairReliefTriangles(project, block, x, y, z) {
     }
   }
   return rotateTrianglesZ(triangles, [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], rotation);
+}
+
+function stairRubbleStoneReliefTriangles(project, block, x, y, z) {
+  const triangles = [];
+  const rotation = block.rotation || 0;
+  for (const localFace of ["south", "north"]) {
+    if (neighborAt(project, block, rotatedFace(localFace, rotation))) continue;
+    triangles.push(...stairRubbleStoneSideReliefTriangles(x, y, z, localFace, block.textureSeed || ""));
+  }
+  return rotateTrianglesZ(triangles, [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], rotation);
+}
+
+function stairRubbleStoneSideReliefTriangles(x, y, z, face, seed) {
+  const triangles = [];
+  const gap = RUBBLE_STONE_JOINT_GAP_MM;
+  const rows = [
+    [0, CELL_SIZE_MM / 4, 0],
+    [CELL_SIZE_MM / 4, CELL_SIZE_MM / 2, 0],
+    [CELL_SIZE_MM / 2, (CELL_SIZE_MM * 3) / 4, CELL_SIZE_MM / 2],
+    [(CELL_SIZE_MM * 3) / 4, CELL_SIZE_MM, CELL_SIZE_MM / 2]
+  ];
+  for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+    const [z0, z1, xStart] = rows[rowIndex];
+    const rowSeed = `${seed}:rubble-stair:${face}:${rowIndex}`;
+    const localWidth = CELL_SIZE_MM - xStart;
+    const stones = irregularBreaks(localWidth, `${rowSeed}:stone`, 10, 20);
+    const startOffset = seededUnit(`${rowSeed}:shift`) > 0.5 ? -((stones[1] - stones[0]) * 0.35) : 0;
+    for (let index = 0; index < stones.length - 1; index += 1) {
+      const raw0 = xStart + stones[index] + startOffset;
+      const raw1 = xStart + stones[index + 1] + startOffset;
+      const u0 = Math.max(xStart, raw0) + gap / 2;
+      const u1 = Math.min(CELL_SIZE_MM, raw1) - gap / 2;
+      const v0 = z0 + gap / 2;
+      const v1 = z1 - gap / 2;
+      if (u1 - u0 < 5 || v1 - v0 < 5) continue;
+      const relief = 0.75 + seededUnit(`${rowSeed}:relief:${index}`) * 0.75;
+      triangles.push(...reliefPolygonForFace(
+        x,
+        y,
+        z,
+        face,
+        irregularStonePolygon(u0, u1, v0, v1, `${rowSeed}:shape:${index}`),
+        relief,
+        RUBBLE_STONE_EMBED_MM
+      ));
+    }
+  }
+  return triangles;
 }
 
 function stairSideReliefBoxes(x, y, z, face, seed) {

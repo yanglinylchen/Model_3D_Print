@@ -388,6 +388,44 @@ test("brick stair step exports side relief on its L-profile sides", () => {
   })).project).triangleCount);
 });
 
+test("rubble stone stair step exports irregular side relief on its L-profile sides", () => {
+  const project = createProject({ name: "Rubble Stair" });
+  const placed = setBlock(project, makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    shape: "stair_step",
+    material: "rubble_stone",
+    textureSeed: "rubble-stair"
+  }));
+  const exported = exportAsciiStl(placed.project);
+  assert.equal(exported.ok, true);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+  const vertices = verticesFromStl(exported.stl);
+  assert.ok(Math.min(...vertices.map((vertex) => vertex.y)) < 0);
+  assert.ok(Math.max(...vertices.map((vertex) => vertex.y)) > 50);
+  assert.equal(Math.max(...vertices.map((vertex) => vertex.z)), 50, "rubble stair relief should not appear on top tread surfaces");
+
+  const plainExported = exportAsciiStl(setBlock(createProject(), makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    shape: "stair_step",
+    material: "plain"
+  })).project);
+  assert.ok(exported.triangleCount > plainExported.triangleCount);
+
+  const brickExported = exportAsciiStl(setBlock(createProject(), makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    shape: "stair_step",
+    material: "brick",
+    textureSeed: "rubble-stair"
+  })).project);
+  assert.notEqual(exported.triangleCount, brickExported.triangleCount, "rubble stair should not reuse brick side boxes");
+});
+
 test("fence panel STL is a hollow 10mm thick panel without material relief", () => {
   const brickProject = createProject({ name: "Fence Brick" });
   const brickPlaced = setBlock(brickProject, makeBlock({
