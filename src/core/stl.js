@@ -1,6 +1,10 @@
-import { CELL_SIZE_MM, SHAPES } from "./constants.js";
+import { CELL_SIZE_MM } from "./constants.js";
 
 const PRISM_WELD_OVERLAP_MM = 0.08;
+const BRICK_RELIEF_RAISE_MM = 1;
+const BRICK_RELIEF_EMBED_MM = 0.08;
+const BRICK_MORTAR_GAP_MM = 1.2;
+const BRICK_ROWS = 5;
 
 export function exportAsciiStl(project, name = project.name || "model_3d_print") {
   const triangles = [];
@@ -24,13 +28,25 @@ export function exportAsciiStl(project, name = project.name || "model_3d_print")
     triangleCount: repaired.length,
     repairNotes: [
       "已合併可安全處理的幾何資料",
-      "已使用列印安全模式輸出閉合外殼"
+      "已使用列印安全模式輸出閉合外殼",
+      "已將磚紋浮雕限制在外露側面，避免頂面干擾屋頂三角柱"
     ]
   };
 }
 
 export function reliefTrianglesForBlock(project, block) {
-  return [];
+  if (!project || block.shape !== "cube" || block.material !== "brick") return [];
+  const x = block.x * CELL_SIZE_MM;
+  const y = block.y * CELL_SIZE_MM;
+  const z = block.z * CELL_SIZE_MM;
+  const triangles = [];
+  for (const face of ["south", "east", "north", "west"]) {
+    if (neighborAt(project, block, face)) continue;
+    for (const [min, max] of brickSideReliefBoxes(x, y, z, CELL_SIZE_MM, face, block.textureSeed || "")) {
+      triangles.push(...cuboidTriangles(min, max));
+    }
+  }
+  return triangles;
 }
 
 export function trianglesForBlock(block, project = null) {
@@ -97,6 +113,51 @@ function cuboidTriangles(min, max) {
     [vertices.p110, vertices.p111, vertices.p011, vertices.p010],
     [vertices.p010, vertices.p011, vertices.p001, vertices.p000]
   ]);
+}
+
+function brickSideReliefBoxes(x, y, z, size, face, seed) {
+  const boxes = [];
+  const rowHeight = size / BRICK_ROWS;
+  const inset = BRICK_MORTAR_GAP_MM;
+  const phase = seededUnit(`${seed}:${face}`) > 0.5 ? 1 : 0;
+  for (let row = 0; row < BRICK_ROWS; row += 1) {
+    const v0 = row * rowHeight + inset / 2;
+    const v1 = (row + 1) * rowHeight - inset / 2;
+    const staggered = (row + phase) % 2 === 1;
+    const brickWidth = staggered ? size / 2 : size / 3;
+    const start = staggered ? -brickWidth / 2 : 0;
+    for (let u = start; u < size; u += brickWidth) {
+      const u0 = Math.max(0, u) + inset / 2;
+      const u1 = Math.min(size, u + brickWidth) - inset / 2;
+      if (u1 - u0 < 3 || v1 - v0 < 3) continue;
+      boxes.push(reliefBoxForFace(x, y, z, face, u0, u1, v0, v1));
+    }
+  }
+  return boxes;
+}
+
+function reliefBoxForFace(x, y, z, face, u0, u1, v0, v1) {
+  const raise = BRICK_RELIEF_RAISE_MM;
+  const embed = BRICK_RELIEF_EMBED_MM;
+  if (face === "east") {
+    return [[x + CELL_SIZE_MM - embed, y + u0, z + v0], [x + CELL_SIZE_MM + raise, y + u1, z + v1]];
+  }
+  if (face === "west") {
+    return [[x - raise, y + u0, z + v0], [x + embed, y + u1, z + v1]];
+  }
+  if (face === "north") {
+    return [[x + u0, y + CELL_SIZE_MM - embed, z + v0], [x + u1, y + CELL_SIZE_MM + raise, z + v1]];
+  }
+  return [[x + u0, y - raise, z + v0], [x + u1, y + embed, z + v1]];
+}
+
+function seededUnit(value) {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0) / 4294967295;
 }
 
 function cubeVertices(min, max) {

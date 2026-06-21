@@ -5,7 +5,7 @@ import { exportAsciiStl } from "../src/core/stl.js";
 
 test("exports non-empty ASCII STL for a simple cube", () => {
   const project = createProject({ name: "Cube STL" });
-  const placed = setBlock(project, makeBlock({ x: 0, y: 0, z: 0, material: "brick" }));
+  const placed = setBlock(project, makeBlock({ x: 0, y: 0, z: 0, material: "plain" }));
   assert.equal(placed.ok, true);
 
   const exported = exportAsciiStl(placed.project);
@@ -72,7 +72,7 @@ test("plain prism roof row exports as closed manifold shell", () => {
   assert.deepEqual(nonManifoldEdges(exported.stl), []);
 });
 
-test("brick cube STL uses print-safe shell geometry without relief shells", () => {
+test("brick cube STL exports side-only relief as closed printable shells", () => {
   const project = createProject({ name: "Material Relief" });
   const placed = setBlock(project, makeBlock({
     x: 0,
@@ -83,9 +83,28 @@ test("brick cube STL uses print-safe shell geometry without relief shells", () =
   }));
   const exported = exportAsciiStl(placed.project);
   assert.equal(exported.ok, true);
-  assert.equal(exported.triangleCount, 12);
-  assert.ok(!exported.stl.includes("vertex 0.5"), "print-safe STL should not contain relief seam vertices");
+  assert.ok(exported.triangleCount > 12);
+  const vertices = verticesFromStl(exported.stl);
+  const minX = Math.min(...vertices.map((vertex) => vertex.x));
+  const maxX = Math.max(...vertices.map((vertex) => vertex.x));
+  const minY = Math.min(...vertices.map((vertex) => vertex.y));
+  const maxY = Math.max(...vertices.map((vertex) => vertex.y));
+  const maxZ = Math.max(...vertices.map((vertex) => vertex.z));
+  assert.equal(maxZ, 50, "brick relief should not appear on the top face");
+  assert.ok(minX < 0 || maxX > 50 || minY < 0 || maxY > 50, "side relief should protrude from exposed vertical faces");
   assert.deepEqual(nonManifoldEdges(exported.stl), []);
+});
+
+test("brick cube with roof does not export top relief under triangular prism", () => {
+  let project = createProject({ name: "Roof Safe Brick", workspaceCells: { x: 3, y: 3, z: 3 } });
+  project = setBlock(project, makeBlock({ x: 0, y: 0, z: 0, material: "brick", textureSeed: "roof-safe" })).project;
+  project = setBlock(project, makeBlock({ x: 0, y: 0, z: 1, shape: "prism_45", material: "plain" })).project;
+  const exported = exportAsciiStl(project);
+  assert.equal(exported.ok, true);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+  const vertices = verticesFromStl(exported.stl);
+  assert.ok(vertices.some((vertex) => vertex.z === 49.4));
+  assert.ok(!vertices.some((vertex) => vertex.z > 50 && vertex.z < 51), "no brick relief should sit between cube top and roof prism");
 });
 
 test("cube next to triangular prism uses weld overlap instead of edge-only contact", () => {
@@ -114,15 +133,11 @@ test("brick triangular prisms export clean prism geometry without cube relief", 
     assert.equal(exported.ok, true);
     assert.equal(exported.triangleCount, 8, `${shape} should not include cube relief boxes`);
 
-    const vertices = [...exported.stl.matchAll(/vertex ([\d.-]+) ([\d.-]+) ([\d.-]+)/g)].map((match) => ({
-      x: Number(match[1]),
-      y: Number(match[2]),
-      z: Number(match[3])
-    }));
+    const vertices = verticesFromStl(exported.stl);
     const maxZ = Math.max(...vertices.map((vertex) => vertex.z));
     const expectedMaxZ = shape === "prism_30" ? Math.tan(Math.PI / 6) * 50 : 50;
     assert.equal(Number(maxZ.toFixed(2)), Number(expectedMaxZ.toFixed(2)));
-    assert.ok(!exported.stl.includes("vertex 0.5"), `${shape} should not contain brick relief seam vertices`);
+    assert.deepEqual(nonManifoldEdges(exported.stl), []);
   }
 });
 
@@ -192,4 +207,12 @@ function nonManifoldEdges(stl) {
   return [...counts.entries()]
     .filter(([, count]) => count !== 2)
     .map(([key, count]) => `${key}:${count}`);
+}
+
+function verticesFromStl(stl) {
+  return [...stl.matchAll(/vertex ([\d.-]+) ([\d.-]+) ([\d.-]+)/g)].map((match) => ({
+    x: Number(match[1]),
+    y: Number(match[2]),
+    z: Number(match[3])
+  }));
 }
