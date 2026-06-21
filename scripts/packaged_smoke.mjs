@@ -95,7 +95,7 @@ try {
   if (metrics.materialButtons !== 2) {
     throw new Error(`Material controls did not render: ${JSON.stringify(metrics)}`);
   }
-  if (metrics.shapeButtons !== 5) {
+  if (metrics.shapeButtons !== 6) {
     throw new Error(`Shape controls did not render all shapes: ${JSON.stringify(metrics)}`);
   }
   if (metrics.nonZeroPixels < 200 || metrics.colorSum === 0) {

@@ -41,10 +41,14 @@ export function exportAsciiStl(project, name = project.name || "model_3d_print")
 }
 
 export function reliefTrianglesForBlock(project, block) {
-  if (!project || block.shape !== "cube" || block.material !== "brick") return [];
+  if (!project || block.material !== "brick") return [];
   const x = block.x * CELL_SIZE_MM;
   const y = block.y * CELL_SIZE_MM;
   const z = block.z * CELL_SIZE_MM;
+  if (block.shape === "stair_step") {
+    return stairReliefTriangles(project, block, x, y, z);
+  }
+  if (block.shape !== "cube") return [];
   const triangles = [];
   for (const face of ["south", "east", "north", "west"]) {
     if (neighborAt(project, block, face)) continue;
@@ -64,6 +68,9 @@ export function trianglesForBlock(block, project = null) {
   }
   if (block.shape === "prism_45") {
     return triangularPrismTriangles(x, y, z, CELL_SIZE_MM, block, project);
+  }
+  if (block.shape === "stair_step") {
+    return rotateTrianglesZ(stairStepTriangles(x, y, z), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
   }
   if (block.shape === "window_cross") {
     return rotateTrianglesZ(windowCrossTriangles(x, y, z), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
@@ -161,6 +168,104 @@ function reliefBoxForFace(x, y, z, face, u0, u1, v0, v1) {
     return [[x + u0, y + CELL_SIZE_MM - embed, z + v0], [x + u1, y + CELL_SIZE_MM + raise, z + v1]];
   }
   return [[x + u0, y - raise, z + v0], [x + u1, y + embed, z + v1]];
+}
+
+function stairReliefTriangles(project, block, x, y, z) {
+  const triangles = [];
+  const rotation = block.rotation || 0;
+  for (const localFace of ["south", "north"]) {
+    if (neighborAt(project, block, rotatedFace(localFace, rotation))) continue;
+    for (const [min, max] of stairSideReliefBoxes(x, y, z, localFace, block.textureSeed || "")) {
+      triangles.push(...cuboidTriangles(min, max));
+    }
+  }
+  return rotateTrianglesZ(triangles, [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], rotation);
+}
+
+function stairSideReliefBoxes(x, y, z, face, seed) {
+  const boxes = [];
+  const rows = [
+    [0, CELL_SIZE_MM / 4, 0],
+    [CELL_SIZE_MM / 4, CELL_SIZE_MM / 2, 0],
+    [CELL_SIZE_MM / 2, (CELL_SIZE_MM * 3) / 4, CELL_SIZE_MM / 2],
+    [(CELL_SIZE_MM * 3) / 4, CELL_SIZE_MM, CELL_SIZE_MM / 2]
+  ];
+  const phase = seededUnit(`${seed}:stair:${face}`) > 0.5 ? 1 : 0;
+  for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+    const [z0, z1, xStart] = rows[rowIndex];
+    const brickWidth = ((rowIndex + phase) % 2 === 0) ? CELL_SIZE_MM / 4 : CELL_SIZE_MM / 3;
+    for (let u = xStart; u < CELL_SIZE_MM; u += brickWidth) {
+      const u0 = Math.max(xStart, u) + BRICK_MORTAR_GAP_MM / 2;
+      const u1 = Math.min(CELL_SIZE_MM, u + brickWidth) - BRICK_MORTAR_GAP_MM / 2;
+      const v0 = z0 + BRICK_MORTAR_GAP_MM / 2;
+      const v1 = z1 - BRICK_MORTAR_GAP_MM / 2;
+      if (u1 - u0 < 3 || v1 - v0 < 3) continue;
+      boxes.push(reliefBoxForFace(x, y, z, face, u0, u1, v0, v1));
+    }
+  }
+  return boxes;
+}
+
+function rotatedFace(face, degrees) {
+  const order = ["east", "north", "west", "south"];
+  const vectors = {
+    east: [1, 0],
+    north: [0, 1],
+    west: [-1, 0],
+    south: [0, -1]
+  };
+  const normalized = ((degrees % 360) + 360) % 360;
+  const steps = Math.round(normalized / 90) % 4;
+  const [x, y] = vectors[face];
+  const rotated = [
+    [x, y],
+    [-y, x],
+    [-x, -y],
+    [y, -x]
+  ][steps];
+  return order.find((candidate) => {
+    const vector = vectors[candidate];
+    return vector[0] === rotated[0] && vector[1] === rotated[1];
+  });
+}
+
+function stairStepTriangles(x, y, z) {
+  const s = CELL_SIZE_MM;
+  const h = s / 2;
+  const y0 = y;
+  const y1 = y + s;
+  const a = [x, y0, z];
+  const b = [x + h, y0, z];
+  const c = [x + s, y0, z];
+  const d = [x + s, y0, z + h];
+  const e = [x + s, y0, z + s];
+  const f = [x + h, y0, z + s];
+  const g = [x + h, y0, z + h];
+  const i = [x, y0, z + h];
+  const A = [x, y1, z];
+  const B = [x + h, y1, z];
+  const C = [x + s, y1, z];
+  const D = [x + s, y1, z + h];
+  const E = [x + s, y1, z + s];
+  const F = [x + h, y1, z + s];
+  const G = [x + h, y1, z + h];
+  const I = [x, y1, z + h];
+  return facesToTriangles([
+    [a, b, g, i],
+    [b, c, d, g],
+    [g, d, e, f],
+    [A, I, G, B],
+    [B, G, D, C],
+    [G, F, E, D],
+    [a, A, B, b],
+    [b, B, C, c],
+    [c, C, D, d],
+    [d, D, E, e],
+    [e, E, F, f],
+    [f, F, G, g],
+    [g, G, I, i],
+    [i, I, A, a]
+  ]);
 }
 
 function windowCrossTriangles(x, y, z) {

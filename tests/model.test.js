@@ -120,6 +120,13 @@ test("door panel does not support itself above a restricted prism", () => {
   assert.match(unsupportedDoor.reason, /斜面方塊/);
 });
 
+test("stair step allows direct placement above because it has flat tread surfaces", () => {
+  let project = createProject({ workspaceCells: { x: 4, y: 4, z: 4 } });
+  project = setBlock(project, makeBlock({ x: 1, y: 1, z: 0, shape: "stair_step", material: "brick" })).project;
+  const upper = setBlock(project, makeBlock({ x: 1, y: 1, z: 1, material: "plain" }));
+  assert.equal(upper.ok, true);
+});
+
 test("undo history retains only 50 steps", () => {
   let project = createProject({ workspaceCells: { x: 100, y: 1, z: 1 } });
   const history = new ProjectHistory(project);

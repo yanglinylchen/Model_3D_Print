@@ -39,6 +39,11 @@ export const SHAPES = Object.freeze({
     maxHeightMm: CELL_SIZE_MM,
     restrictedTop: true
   },
+  stair_step: {
+    id: "stair_step",
+    label: "樓梯",
+    maxHeightMm: CELL_SIZE_MM
+  },
   window_cross: {
     id: "window_cross",
     label: "十字窗",

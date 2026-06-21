@@ -252,6 +252,56 @@ test("rotated door panel STL moves the 10mm panel to another side", () => {
   assert.equal(Math.max(...vertices.map((vertex) => vertex.z)), 100);
 });
 
+test("stair step STL is an L profile that occupies one cell", () => {
+  const project = createProject({ name: "Stair Step" });
+  const placed = setBlock(project, makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    shape: "stair_step",
+    material: "plain"
+  }));
+  const exported = exportAsciiStl(placed.project);
+  assert.equal(exported.ok, true);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+  const vertices = verticesFromStl(exported.stl);
+  assert.equal(Math.min(...vertices.map((vertex) => vertex.x)), 0);
+  assert.equal(Math.max(...vertices.map((vertex) => vertex.x)), 50);
+  assert.equal(Math.min(...vertices.map((vertex) => vertex.y)), 0);
+  assert.equal(Math.max(...vertices.map((vertex) => vertex.y)), 50);
+  assert.equal(Math.min(...vertices.map((vertex) => vertex.z)), 0);
+  assert.equal(Math.max(...vertices.map((vertex) => vertex.z)), 50);
+  const triangles = trianglesFromStl(exported.stl);
+  assert.equal(coversPointInXz(triangles, 12, 37), false, "upper-left quarter should be missing from the stair side profile");
+  assert.equal(coversPointInXz(triangles, 12, 12), true, "lower tread volume should be solid");
+  assert.equal(coversPointInXz(triangles, 37, 37), true, "upper tread volume should be solid");
+});
+
+test("brick stair step exports side relief on its L-profile sides", () => {
+  const project = createProject({ name: "Brick Stair" });
+  const placed = setBlock(project, makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    shape: "stair_step",
+    material: "brick",
+    textureSeed: "brick-stair"
+  }));
+  const exported = exportAsciiStl(placed.project);
+  assert.equal(exported.ok, true);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+  const vertices = verticesFromStl(exported.stl);
+  assert.ok(Math.min(...vertices.map((vertex) => vertex.y)) < 0);
+  assert.ok(Math.max(...vertices.map((vertex) => vertex.y)) > 50);
+  assert.ok(exported.triangleCount > exportAsciiStl(setBlock(createProject(), makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    shape: "stair_step",
+    material: "plain"
+  })).project).triangleCount);
+});
+
 test("available materials are brick and plain only", () => {
   for (const material of ["brick", "plain"]) {
     const project = createProject({ name: `${material} Relief` });

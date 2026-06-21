@@ -173,6 +173,7 @@ function renderShapeControls() {
     cube: "cube.svg",
     prism_30: "prism_30.svg",
     prism_45: "prism_45.svg",
+    stair_step: "stair_step.svg",
     window_cross: "window_cross.svg",
     door_panel: "door_panel.svg"
   };
@@ -261,6 +262,9 @@ function createBlockMesh(block) {
 }
 
 function createGeometry(shape) {
+  if (shape === "stair_step") {
+    return createStairStepGeometry();
+  }
   if (shape === "window_cross") {
     return createWindowCrossGeometry();
   }
@@ -292,6 +296,55 @@ function createGeometry(shape) {
     return geometry;
   }
   return new THREE.BoxGeometry(CELL_SIZE_MM, CELL_SIZE_MM, CELL_SIZE_MM);
+}
+
+function createStairStepGeometry() {
+  const s = CELL_SIZE_MM;
+  const h = s / 2;
+  const y0 = -s / 2;
+  const y1 = s / 2;
+  const z0 = -s / 2;
+  const a = [-s / 2, y0, z0];
+  const b = [0, y0, z0];
+  const c = [s / 2, y0, z0];
+  const d = [s / 2, y0, z0 + h];
+  const e = [s / 2, y0, z0 + s];
+  const f = [0, y0, z0 + s];
+  const g = [0, y0, z0 + h];
+  const i = [-s / 2, y0, z0 + h];
+  const A = [-s / 2, y1, z0];
+  const B = [0, y1, z0];
+  const C = [s / 2, y1, z0];
+  const D = [s / 2, y1, z0 + h];
+  const E = [s / 2, y1, z0 + s];
+  const F = [0, y1, z0 + s];
+  const G = [0, y1, z0 + h];
+  const I = [-s / 2, y1, z0 + h];
+  const positions = [];
+  const indices = [];
+  for (const face of [
+    [a, b, g, i],
+    [b, c, d, g],
+    [g, d, e, f],
+    [A, I, G, B],
+    [B, G, D, C],
+    [G, F, E, D],
+    [a, A, B, b],
+    [b, B, C, c],
+    [c, C, D, d],
+    [d, D, E, e],
+    [e, E, F, f],
+    [f, F, G, g],
+    [g, G, I, i],
+    [i, I, A, a]
+  ]) {
+    appendFace(positions, indices, ...face);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
 }
 
 function createDoorPanelGeometry() {
