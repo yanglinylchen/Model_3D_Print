@@ -65,7 +65,13 @@ export function reliefTrianglesForBlock(project, block) {
     if (block.shape === "prism_45") {
       return roofTileReliefTriangles(x, y, z, CELL_SIZE_MM, block);
     }
+    if (block.shape === "roof_corner") {
+      return roofCornerRoofTileReliefTriangles(x, y, z, block);
+    }
     return [];
+  }
+  if (block.shape === "chimney") {
+    return chimneyReliefTriangles(project, block, x, y, z);
   }
   if (block.shape === "stair_step") {
     if (block.material === "brick") return stairReliefTriangles(project, block, x, y, z);
@@ -467,6 +473,68 @@ function slopePlateTriangles(x, y, z, height, u0, u1, v0, v1) {
   ]);
 }
 
+function roofCornerRoofTileReliefTriangles(x, y, z, block) {
+  const triangles = [];
+  const seed = block.textureSeed || "roof-corner-tile";
+  const rowBreaks = [5, 13, 21, 29, 37, 45, 50];
+  const gap = ROOF_TILE_GAP_MM;
+  for (let row = 0; row < rowBreaks.length - 1; row += 1) {
+    const u0 = rowBreaks[row] + gap / 2;
+    const u1 = rowBreaks[row + 1] - gap / 2;
+    const phase = row % 2 === 0 ? -8 : 0;
+    for (let v = phase; v < CELL_SIZE_MM; v += 17) {
+      const v0 = Math.max(0, v) + gap / 2;
+      const v1 = Math.min(CELL_SIZE_MM, v + 17) - gap / 2;
+      if (u1 - u0 < 4 || v1 - v0 < 5) continue;
+      const jitter = seededUnit(`${seed}:corner:${row}:${v}`) * 0.8;
+      const a0 = u0 + jitter;
+      const a1 = Math.min(u1, u1 + jitter);
+      if (v1 < a0) {
+        triangles.push(...parametricSlopePlateTriangles(
+          (u, t) => [x + u, y + t, z + u],
+          normalizeVector([-1, 0, 1]),
+          a0,
+          a1,
+          v0,
+          v1
+        ));
+      }
+      if (v1 < a0) {
+        triangles.push(...parametricSlopePlateTriangles(
+          (t, u) => [x + t, y + u, z + u],
+          normalizeVector([0, -1, 1]),
+          v0,
+          v1,
+          a0,
+          a1
+        ));
+      }
+    }
+  }
+  return rotateTrianglesZ(triangles, [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
+}
+
+function parametricSlopePlateTriangles(pointAt, normal, u0, u1, v0, v1) {
+  const bottom = (u, v) => offsetPoint(pointAt(u, v), normal, -ROOF_TILE_EMBED_MM);
+  const top = (u, v) => offsetPoint(pointAt(u, v), normal, ROOF_TILE_RAISE_MM);
+  const a = bottom(u0, v0);
+  const b = bottom(u1, v0);
+  const c = bottom(u1, v1);
+  const d = bottom(u0, v1);
+  const A = top(u0, v0);
+  const B = top(u1, v0);
+  const C = top(u1, v1);
+  const D = top(u0, v1);
+  return facesToTriangles([
+    [a, b, c, d],
+    [A, D, C, B],
+    [a, A, B, b],
+    [b, B, C, c],
+    [c, C, D, d],
+    [d, D, A, a]
+  ]);
+}
+
 function pointOnSlope(x, y, z, height, u, v) {
   return [x + u, y + v, z + (height * u) / CELL_SIZE_MM];
 }
@@ -843,6 +911,25 @@ function chimneyTriangles(x, y, z) {
     }
   }
   return gridColumnTriangles(x, y, z, spans, spans, occupied, CELL_SIZE_MM);
+}
+
+function chimneyReliefTriangles(project, block, x, y, z) {
+  const triangles = [];
+  for (const face of ["south", "east", "north", "west"]) {
+    if (neighborAt(project, block, face)) continue;
+    if (block.material === "rubble_stone") {
+      triangles.push(...rubbleStoneSideReliefTriangles(x, y, z, CELL_SIZE_MM, face, block.textureSeed || ""));
+    } else if (block.material === "metal_plate") {
+      triangles.push(...metalPlateReliefTriangles(x, y, z, face));
+    } else if (block.material === "grid_tile") {
+      triangles.push(...gridTileReliefTriangles(x, y, z, face));
+    } else if (block.material === "brick") {
+      for (const [min, max] of brickSideReliefBoxes(x, y, z, CELL_SIZE_MM, face, block.textureSeed || "")) {
+        triangles.push(...cuboidTriangles(min, max));
+      }
+    }
+  }
+  return rotateTrianglesZ(triangles, [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
 }
 
 function roadTriangles(x, y, z) {

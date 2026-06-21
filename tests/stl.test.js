@@ -263,6 +263,38 @@ test("roof tile material does not add relief to regular cubes", () => {
   assert.deepEqual(nonManifoldEdges(exported.stl), []);
 });
 
+test("roof corner supports roof tile relief on its sloped faces", () => {
+  const project = createProject({ name: "Roof Corner Tile" });
+  const placed = setBlock(project, makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    shape: "roof_corner",
+    material: "roof_tile",
+    textureSeed: "roof-corner-tile"
+  }));
+  const exported = exportAsciiStl(placed.project);
+  assert.equal(exported.ok, true);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+
+  const plainProject = createProject({ name: "Plain Roof Corner" });
+  const plainPlaced = setBlock(plainProject, makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    shape: "roof_corner",
+    material: "plain"
+  }));
+  const plainExported = exportAsciiStl(plainPlaced.project);
+  assert.ok(exported.triangleCount > plainExported.triangleCount, "roof corner tile relief should add printable geometry");
+
+  const tileVertices = verticesFromStl(exported.stl);
+  assert.ok(
+    tileVertices.some((vertex) => vertex.z > vertex.x + 0.2 && vertex.z > vertex.y + 0.2),
+    "roof corner tile relief should lift off the original sloped faces"
+  );
+});
+
 test("rotated triangular prism STL follows block rotation", () => {
   const project = createProject({ name: "Rotated Prism" });
   const placed = setBlock(project, makeBlock({
@@ -564,6 +596,35 @@ test("new scene object STLs are closed and fit their cells", () => {
     assert.equal(Math.max(...vertices.map((vertex) => vertex.y)), 50, `${shape} max y`);
     assert.equal(Math.min(...vertices.map((vertex) => vertex.z)), 0, `${shape} min z`);
     assert.ok(Math.max(...vertices.map((vertex) => vertex.z)) <= 50, `${shape} should fit one cell high`);
+  }
+});
+
+test("chimney supports cube wall materials on its exterior faces", () => {
+  const plainProject = createProject({ name: "Plain Chimney" });
+  const plainPlaced = setBlock(plainProject, makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    shape: "chimney",
+    material: "plain"
+  }));
+  const plainExported = exportAsciiStl(plainPlaced.project);
+  assert.equal(plainExported.ok, true);
+
+  for (const material of ["brick", "rubble_stone", "metal_plate", "grid_tile"]) {
+    const project = createProject({ name: `${material} Chimney` });
+    const placed = setBlock(project, makeBlock({
+      x: 0,
+      y: 0,
+      z: 0,
+      shape: "chimney",
+      material,
+      textureSeed: `${material}-chimney`
+    }));
+    const exported = exportAsciiStl(placed.project);
+    assert.equal(exported.ok, true);
+    assert.deepEqual(nonManifoldEdges(exported.stl), [], `${material} chimney should be manifold`);
+    assert.ok(exported.triangleCount > plainExported.triangleCount, `${material} chimney should include exterior relief`);
   }
 });
 

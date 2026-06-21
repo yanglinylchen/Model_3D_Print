@@ -1108,10 +1108,33 @@ function updateHeldCameraControls() {
   if (state.pressedKeys.has("s")) state.cameraPitch = clamp(state.cameraPitch - pitchStep, 0.22, 1.4);
   if (state.pressedKeys.has("q")) state.cameraLift = clamp(state.cameraLift - liftStep, -1200, 1200);
   if (state.pressedKeys.has("e")) state.cameraLift = clamp(state.cameraLift + liftStep, -1200, 1200);
-  if (state.pressedKeys.has("f")) state.cameraPan.x = clamp(state.cameraPan.x - panStep, -3000, 3000);
-  if (state.pressedKeys.has("h")) state.cameraPan.x = clamp(state.cameraPan.x + panStep, -3000, 3000);
-  if (state.pressedKeys.has("g")) state.cameraPan.y = clamp(state.cameraPan.y - panStep, -3000, 3000);
-  if (state.pressedKeys.has("t")) state.cameraPan.y = clamp(state.cameraPan.y + panStep, -3000, 3000);
+  panCameraByView({
+    right: (state.pressedKeys.has("h") ? 1 : 0) - (state.pressedKeys.has("f") ? 1 : 0),
+    forward: (state.pressedKeys.has("t") ? 1 : 0) - (state.pressedKeys.has("g") ? 1 : 0),
+    step: panStep
+  });
+}
+
+function panCameraByView({ right, forward, step }) {
+  if (!right && !forward) return;
+  const viewForward = {
+    x: -Math.cos(state.cameraAngle),
+    y: -Math.sin(state.cameraAngle)
+  };
+  const viewRight = {
+    x: -Math.sin(state.cameraAngle),
+    y: Math.cos(state.cameraAngle)
+  };
+  state.cameraPan.x = clamp(
+    state.cameraPan.x + ((viewRight.x * right) + (viewForward.x * forward)) * step,
+    -3000,
+    3000
+  );
+  state.cameraPan.y = clamp(
+    state.cameraPan.y + ((viewRight.y * right) + (viewForward.y * forward)) * step,
+    -3000,
+    3000
+  );
 }
 
 function updatePointer(event) {
