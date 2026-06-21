@@ -12,6 +12,15 @@ export function blockKey({ x, y, z }) {
   return `${x},${y},${z}`;
 }
 
+export function occupiedCells(block) {
+  const heightCells = SHAPES[block.shape]?.heightCells || 1;
+  return Array.from({ length: heightCells }, (_item, dz) => ({
+    x: block.x,
+    y: block.y,
+    z: block.z + dz
+  }));
+}
+
 export function cloneProject(project) {
   return JSON.parse(JSON.stringify(project));
 }
@@ -52,10 +61,12 @@ export function validateProject(project) {
   const occupied = new Set();
   for (const block of project.blocks) {
     assertBlockInside(block, project.workspaceCells);
-    if (occupied.has(blockKey(block))) {
-      throw new Error(`格子 ${blockKey(block)} 已有方塊。`);
+    for (const cell of occupiedCells(block)) {
+      if (occupied.has(blockKey(cell))) {
+        throw new Error(`格子 ${blockKey(cell)} 已有方塊。`);
+      }
+      occupied.add(blockKey(cell));
     }
-    occupied.add(blockKey(block));
   }
   const unsupported = findUnsupportedRoofBlocks(project);
   if (unsupported.length > 0) {
@@ -102,7 +113,7 @@ export function makeBlock({ x, y, z, shape = "cube", material = "brick", rotatio
 
 export function getBlock(project, position) {
   const key = blockKey(position);
-  return project.blocks.find((block) => blockKey(block) === key) || null;
+  return project.blocks.find((block) => occupiedCells(block).some((cell) => blockKey(cell) === key)) || null;
 }
 
 export function setBlock(project, block) {
@@ -119,7 +130,8 @@ export function setBlock(project, block) {
 
 export function removeBlock(project, position) {
   const next = cloneProject(project);
-  const key = blockKey(position);
+  const block = getBlock(next, position);
+  const key = block ? blockKey(block) : blockKey(position);
   const before = next.blocks.length;
   next.blocks = next.blocks.filter((block) => blockKey(block) !== key);
   const unsupported = findUnsupportedRoofBlocks(next);
@@ -213,6 +225,13 @@ export function validatePlacement(project, block) {
   if (project.blocks.length >= MAX_BLOCKS && !getBlock(project, block)) {
     return { ok: false, reason: `方塊數已達上限 ${MAX_BLOCKS}。` };
   }
+  const targetKeys = new Set(occupiedCells(block).map(blockKey));
+  for (const existing of project.blocks) {
+    if (blockKey(existing) === blockKey(block)) continue;
+    if (occupiedCells(existing).some((cell) => targetKeys.has(blockKey(cell)))) {
+      return { ok: false, reason: "這個位置需要的格子已被其他方塊占用。" };
+    }
+  }
   const below = getBlock(project, { x: block.x, y: block.y, z: block.z - 1 });
   if (below && SHAPES[below.shape]?.restrictedTop && !hasUpperBlockSupport(project, block)) {
     return {
@@ -231,7 +250,10 @@ export function hasUpperBlockSupport(project, block) {
     { x: block.x, y: block.y - 1, z: block.z },
     { x: block.x, y: block.y, z: block.z + 1 }
   ];
-  return supportPositions.some((position) => getBlock(project, position));
+  return supportPositions.some((position) => {
+    const support = getBlock(project, position);
+    return support && blockKey(support) !== blockKey(block);
+  });
 }
 
 export function findUnsupportedRoofBlocks(project) {
@@ -268,17 +290,17 @@ function assertBlockInside(block, workspaceCells) {
 }
 
 function isInsideWorkspace(block, workspaceCells) {
-  return (
+  return occupiedCells(block).every((cell) => (
     Number.isInteger(block.x) &&
     Number.isInteger(block.y) &&
     Number.isInteger(block.z) &&
-    block.x >= 0 &&
-    block.y >= 0 &&
-    block.z >= 0 &&
-    block.x < workspaceCells.x &&
-    block.y < workspaceCells.y &&
-    block.z < workspaceCells.z
-  );
+    cell.x >= 0 &&
+    cell.y >= 0 &&
+    cell.z >= 0 &&
+    cell.x < workspaceCells.x &&
+    cell.y < workspaceCells.y &&
+    cell.z < workspaceCells.z
+  ));
 }
 
 function normalizeRotation(rotation) {

@@ -46,6 +46,7 @@ try {
     const rect = canvas.getBoundingClientRect();
     const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
     const materialButtons = document.querySelectorAll("#materialList [data-material]").length;
+    const shapeButtons = document.querySelectorAll("#shapeList [data-shape]").length;
     const sample = {
       width: canvas.width,
       height: canvas.height,
@@ -53,6 +54,7 @@ try {
       cssHeight: rect.height,
       hasWebgl: Boolean(gl),
       materialButtons,
+      shapeButtons,
       nonZeroPixels: 0,
       colorSum: 0,
       blockCountText: document.querySelector("#blockCount")?.textContent || "",
@@ -92,6 +94,9 @@ try {
   }
   if (metrics.materialButtons !== 2) {
     throw new Error(`Material controls did not render: ${JSON.stringify(metrics)}`);
+  }
+  if (metrics.shapeButtons !== 5) {
+    throw new Error(`Shape controls did not render all shapes: ${JSON.stringify(metrics)}`);
   }
   if (metrics.nonZeroPixels < 200 || metrics.colorSum === 0) {
     throw new Error(`Packaged canvas appears blank: ${JSON.stringify(metrics)}`);

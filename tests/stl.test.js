@@ -205,6 +205,48 @@ test("rotated window cross STL moves the 10mm panel to another outer side", () =
   assert.equal(Math.max(...vertices.map((vertex) => vertex.y)), 50);
 });
 
+test("door panel STL is a 100mm tall 10mm thick printable panel", () => {
+  const project = createProject({ name: "Door Panel", workspaceCells: { x: 3, y: 3, z: 3 } });
+  const placed = setBlock(project, makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    shape: "door_panel",
+    material: "plain"
+  }));
+  const exported = exportAsciiStl(placed.project);
+  assert.equal(exported.ok, true);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+  const vertices = verticesFromStl(exported.stl);
+  assert.equal(Math.min(...vertices.map((vertex) => vertex.x)), 0);
+  assert.equal(Math.max(...vertices.map((vertex) => vertex.x)), 50);
+  assert.equal(Math.min(...vertices.map((vertex) => vertex.y)), 0);
+  assert.equal(Math.max(...vertices.map((vertex) => vertex.y)), 10);
+  assert.equal(Math.min(...vertices.map((vertex) => vertex.z)), 0);
+  assert.equal(Math.max(...vertices.map((vertex) => vertex.z)), 100);
+});
+
+test("rotated door panel STL moves the 10mm panel to another side", () => {
+  const project = createProject({ name: "Rotated Door", workspaceCells: { x: 3, y: 3, z: 3 } });
+  const placed = setBlock(project, makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    shape: "door_panel",
+    material: "plain",
+    rotation: 90
+  }));
+  const exported = exportAsciiStl(placed.project);
+  assert.equal(exported.ok, true);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+  const vertices = verticesFromStl(exported.stl);
+  assert.equal(Math.min(...vertices.map((vertex) => vertex.x)), 40);
+  assert.equal(Math.max(...vertices.map((vertex) => vertex.x)), 50);
+  assert.equal(Math.min(...vertices.map((vertex) => vertex.y)), 0);
+  assert.equal(Math.max(...vertices.map((vertex) => vertex.y)), 50);
+  assert.equal(Math.max(...vertices.map((vertex) => vertex.z)), 100);
+});
+
 test("available materials are brick and plain only", () => {
   for (const material of ["brick", "plain"]) {
     const project = createProject({ name: `${material} Relief` });

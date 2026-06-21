@@ -7,6 +7,10 @@ const BRICK_MORTAR_GAP_MM = 1.2;
 const BRICK_ROWS = 5;
 const WINDOW_THICKNESS_MM = 10;
 const WINDOW_BAR_MM = 8;
+const DOOR_THICKNESS_MM = 10;
+const DOOR_BACK_RECESS_MM = 2;
+const DOOR_RAIL_MM = 7;
+const DOOR_MID_RAIL_MM = 8;
 
 export function exportAsciiStl(project, name = project.name || "model_3d_print") {
   const triangles = [];
@@ -63,6 +67,9 @@ export function trianglesForBlock(block, project = null) {
   }
   if (block.shape === "window_cross") {
     return rotateTrianglesZ(windowCrossTriangles(x, y, z), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
+  }
+  if (block.shape === "door_panel") {
+    return rotateTrianglesZ(doorPanelTriangles(x, y, z), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
   }
   return cubeTriangles(x, y, z, CELL_SIZE_MM, block, project);
 }
@@ -208,6 +215,100 @@ function windowCrossTriangles(x, y, z) {
   return triangles;
 }
 
+function doorPanelTriangles(x, y, z) {
+  const { xSpans, zSpans, depths } = doorDepthGrid();
+  const backY = y + DOOR_THICKNESS_MM;
+  const faces = [];
+
+  for (let xi = 0; xi < xSpans.length - 1; xi += 1) {
+    for (let zi = 0; zi < zSpans.length - 1; zi += 1) {
+      const depth = depths[xi][zi];
+      faces.push([
+        [x + xSpans[xi], y + depth, z + zSpans[zi]],
+        [x + xSpans[xi + 1], y + depth, z + zSpans[zi]],
+        [x + xSpans[xi + 1], y + depth, z + zSpans[zi + 1]],
+        [x + xSpans[xi], y + depth, z + zSpans[zi + 1]]
+      ]);
+      faces.push([
+        [x + xSpans[xi], backY, z + zSpans[zi]],
+        [x + xSpans[xi], backY, z + zSpans[zi + 1]],
+        [x + xSpans[xi + 1], backY, z + zSpans[zi + 1]],
+        [x + xSpans[xi + 1], backY, z + zSpans[zi]]
+      ]);
+    }
+  }
+
+  for (let zi = 0; zi < zSpans.length - 1; zi += 1) {
+    const leftDepth = depths[0][zi];
+    const rightDepth = depths[depths.length - 1][zi];
+    faces.push([[x, y + leftDepth, z + zSpans[zi]], [x, backY, z + zSpans[zi]], [x, backY, z + zSpans[zi + 1]], [x, y + leftDepth, z + zSpans[zi + 1]]]);
+    faces.push([[x + CELL_SIZE_MM, y + rightDepth, z + zSpans[zi]], [x + CELL_SIZE_MM, y + rightDepth, z + zSpans[zi + 1]], [x + CELL_SIZE_MM, backY, z + zSpans[zi + 1]], [x + CELL_SIZE_MM, backY, z + zSpans[zi]]]);
+  }
+
+  for (let xi = 0; xi < xSpans.length - 1; xi += 1) {
+    const bottomDepth = depths[xi][0];
+    const topDepth = depths[xi][zSpans.length - 2];
+    faces.push([[x + xSpans[xi], y + bottomDepth, z], [x + xSpans[xi + 1], y + bottomDepth, z], [x + xSpans[xi + 1], backY, z], [x + xSpans[xi], backY, z]]);
+    faces.push([[x + xSpans[xi], y + topDepth, z + CELL_SIZE_MM * 2], [x + xSpans[xi], backY, z + CELL_SIZE_MM * 2], [x + xSpans[xi + 1], backY, z + CELL_SIZE_MM * 2], [x + xSpans[xi + 1], y + topDepth, z + CELL_SIZE_MM * 2]]);
+  }
+
+  for (let xi = 0; xi < xSpans.length - 2; xi += 1) {
+    for (let zi = 0; zi < zSpans.length - 1; zi += 1) {
+      const leftDepth = depths[xi][zi];
+      const rightDepth = depths[xi + 1][zi];
+      if (leftDepth === rightDepth) continue;
+      const xEdge = x + xSpans[xi + 1];
+      const y0 = y + Math.min(leftDepth, rightDepth);
+      const y1 = y + Math.max(leftDepth, rightDepth);
+      faces.push([[xEdge, y0, z + zSpans[zi]], [xEdge, y1, z + zSpans[zi]], [xEdge, y1, z + zSpans[zi + 1]], [xEdge, y0, z + zSpans[zi + 1]]]);
+    }
+  }
+
+  for (let xi = 0; xi < xSpans.length - 1; xi += 1) {
+    for (let zi = 0; zi < zSpans.length - 2; zi += 1) {
+      const lowerDepth = depths[xi][zi];
+      const upperDepth = depths[xi][zi + 1];
+      if (lowerDepth === upperDepth) continue;
+      const zEdge = z + zSpans[zi + 1];
+      const y0 = y + Math.min(lowerDepth, upperDepth);
+      const y1 = y + Math.max(lowerDepth, upperDepth);
+      faces.push([[x + xSpans[xi], y0, zEdge], [x + xSpans[xi + 1], y0, zEdge], [x + xSpans[xi + 1], y1, zEdge], [x + xSpans[xi], y1, zEdge]]);
+    }
+  }
+
+  return facesToTriangles(faces);
+}
+
+function doorDepthGrid() {
+  const r = DOOR_RAIL_MM;
+  const mid0 = CELL_SIZE_MM - DOOR_MID_RAIL_MM / 2;
+  const mid1 = CELL_SIZE_MM + DOOR_MID_RAIL_MM / 2;
+  const handle0 = CELL_SIZE_MM * 0.68;
+  const handle1 = CELL_SIZE_MM * 0.8;
+  const handleZ0 = CELL_SIZE_MM * 0.86;
+  const handleZ1 = CELL_SIZE_MM * 1.06;
+  const xSpans = [0, r, handle0, handle1, CELL_SIZE_MM - r, CELL_SIZE_MM];
+  const zSpans = [0, r, handleZ0, mid0, mid1, handleZ1, CELL_SIZE_MM * 2 - r, CELL_SIZE_MM * 2];
+  const depths = [];
+  for (let xi = 0; xi < xSpans.length - 1; xi += 1) {
+    depths[xi] = [];
+    for (let zi = 0; zi < zSpans.length - 1; zi += 1) {
+      const x0 = xSpans[xi];
+      const x1 = xSpans[xi + 1];
+      const z0 = zSpans[zi];
+      const z1 = zSpans[zi + 1];
+      const raised = x0 < r
+        || x1 > CELL_SIZE_MM - r
+        || z0 < r
+        || z1 > CELL_SIZE_MM * 2 - r
+        || (z0 < mid1 && z1 > mid0)
+        || (x0 >= handle0 && x1 <= handle1 && z0 >= handleZ0 && z1 <= handleZ1);
+      depths[xi][zi] = raised ? 0 : DOOR_BACK_RECESS_MM;
+    }
+  }
+  return { xSpans, zSpans, depths };
+}
+
 function seededUnit(value) {
   let hash = 2166136261;
   for (let index = 0; index < value.length; index += 1) {
@@ -240,7 +341,16 @@ function neighborAt(project, block, face) {
     south: [0, -1, 0]
   };
   const [dx, dy, dz] = offsets[face];
-  return project.blocks.find((other) => other.x === block.x + dx && other.y === block.y + dy && other.z === block.z + dz) || null;
+  const position = { x: block.x + dx, y: block.y + dy, z: block.z + dz };
+  return project.blocks.find((other) => blockOccupies(other, position)) || null;
+}
+
+function blockOccupies(block, position) {
+  const heightCells = block.shape === "door_panel" ? 2 : 1;
+  return block.x === position.x
+    && block.y === position.y
+    && position.z >= block.z
+    && position.z < block.z + heightCells;
 }
 
 function shouldEmitCubeFace(project, block, face) {

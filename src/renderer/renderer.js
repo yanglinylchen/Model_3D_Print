@@ -29,6 +29,10 @@ import { exportAsciiStl } from "../core/stl.js";
 const ASSET = "../../assets";
 const WINDOW_THICKNESS_MM = 10;
 const WINDOW_BAR_MM = 8;
+const DOOR_THICKNESS_MM = 10;
+const DOOR_BACK_RECESS_MM = 2;
+const DOOR_RAIL_MM = 7;
+const DOOR_MID_RAIL_MM = 8;
 const EXAMPLES = [
   { label: "小房子", path: `${ASSET}/examples/small_house.m3dp` },
   { label: "石橋", path: `${ASSET}/examples/stone_bridge.m3dp` },
@@ -169,7 +173,8 @@ function renderShapeControls() {
     cube: "cube.svg",
     prism_30: "prism_30.svg",
     prism_45: "prism_45.svg",
-    window_cross: "window_cross.svg"
+    window_cross: "window_cross.svg",
+    door_panel: "door_panel.svg"
   };
   elements.shapeList.innerHTML = "";
   for (const shape of Object.values(SHAPES)) {
@@ -179,6 +184,7 @@ function renderShapeControls() {
     button.innerHTML = `<img src="${ASSET}/shape_icons/${iconByShape[shape.id]}" alt=""><span>${shape.label}</span>`;
     button.addEventListener("click", () => {
       state.selectedShape = shape.id;
+      clampCursorToSelectedShape();
       updateUi();
     });
     elements.shapeList.append(button);
@@ -258,6 +264,9 @@ function createGeometry(shape) {
   if (shape === "window_cross") {
     return createWindowCrossGeometry();
   }
+  if (shape === "door_panel") {
+    return createDoorPanelGeometry();
+  }
   if (shape === "prism_30" || shape === "prism_45") {
     const height = shape === "prism_30" ? Math.tan(Math.PI / 6) * CELL_SIZE_MM : CELL_SIZE_MM;
     const s = CELL_SIZE_MM;
@@ -283,6 +292,110 @@ function createGeometry(shape) {
     return geometry;
   }
   return new THREE.BoxGeometry(CELL_SIZE_MM, CELL_SIZE_MM, CELL_SIZE_MM);
+}
+
+function createDoorPanelGeometry() {
+  const s = CELL_SIZE_MM;
+  const { xSpans, zSpans, depths } = doorDepthGrid();
+  const backY = -s / 2 + DOOR_THICKNESS_MM;
+  const positions = [];
+  const indices = [];
+
+  for (let xi = 0; xi < xSpans.length - 1; xi += 1) {
+    for (let zi = 0; zi < zSpans.length - 1; zi += 1) {
+      const depth = depths[xi][zi];
+      appendFace(
+        positions,
+        indices,
+        [-s / 2 + xSpans[xi], -s / 2 + depth, -s / 2 + zSpans[zi]],
+        [-s / 2 + xSpans[xi + 1], -s / 2 + depth, -s / 2 + zSpans[zi]],
+        [-s / 2 + xSpans[xi + 1], -s / 2 + depth, -s / 2 + zSpans[zi + 1]],
+        [-s / 2 + xSpans[xi], -s / 2 + depth, -s / 2 + zSpans[zi + 1]]
+      );
+      appendFace(
+        positions,
+        indices,
+        [-s / 2 + xSpans[xi], backY, -s / 2 + zSpans[zi]],
+        [-s / 2 + xSpans[xi], backY, -s / 2 + zSpans[zi + 1]],
+        [-s / 2 + xSpans[xi + 1], backY, -s / 2 + zSpans[zi + 1]],
+        [-s / 2 + xSpans[xi + 1], backY, -s / 2 + zSpans[zi]]
+      );
+    }
+  }
+
+  for (let zi = 0; zi < zSpans.length - 1; zi += 1) {
+    const leftDepth = depths[0][zi];
+    const rightDepth = depths[depths.length - 1][zi];
+    appendFace(positions, indices, [-s / 2, -s / 2 + leftDepth, -s / 2 + zSpans[zi]], [-s / 2, backY, -s / 2 + zSpans[zi]], [-s / 2, backY, -s / 2 + zSpans[zi + 1]], [-s / 2, -s / 2 + leftDepth, -s / 2 + zSpans[zi + 1]]);
+    appendFace(positions, indices, [s / 2, -s / 2 + rightDepth, -s / 2 + zSpans[zi]], [s / 2, -s / 2 + rightDepth, -s / 2 + zSpans[zi + 1]], [s / 2, backY, -s / 2 + zSpans[zi + 1]], [s / 2, backY, -s / 2 + zSpans[zi]]);
+  }
+
+  for (let xi = 0; xi < xSpans.length - 1; xi += 1) {
+    const bottomDepth = depths[xi][0];
+    const topDepth = depths[xi][zSpans.length - 2];
+    appendFace(positions, indices, [-s / 2 + xSpans[xi], -s / 2 + bottomDepth, -s / 2], [-s / 2 + xSpans[xi + 1], -s / 2 + bottomDepth, -s / 2], [-s / 2 + xSpans[xi + 1], backY, -s / 2], [-s / 2 + xSpans[xi], backY, -s / 2]);
+    appendFace(positions, indices, [-s / 2 + xSpans[xi], -s / 2 + topDepth, -s / 2 + s * 2], [-s / 2 + xSpans[xi], backY, -s / 2 + s * 2], [-s / 2 + xSpans[xi + 1], backY, -s / 2 + s * 2], [-s / 2 + xSpans[xi + 1], -s / 2 + topDepth, -s / 2 + s * 2]);
+  }
+
+  for (let xi = 0; xi < xSpans.length - 2; xi += 1) {
+    for (let zi = 0; zi < zSpans.length - 1; zi += 1) {
+      const leftDepth = depths[xi][zi];
+      const rightDepth = depths[xi + 1][zi];
+      if (leftDepth === rightDepth) continue;
+      const xEdge = -s / 2 + xSpans[xi + 1];
+      const y0 = -s / 2 + Math.min(leftDepth, rightDepth);
+      const y1 = -s / 2 + Math.max(leftDepth, rightDepth);
+      appendFace(positions, indices, [xEdge, y0, -s / 2 + zSpans[zi]], [xEdge, y1, -s / 2 + zSpans[zi]], [xEdge, y1, -s / 2 + zSpans[zi + 1]], [xEdge, y0, -s / 2 + zSpans[zi + 1]]);
+    }
+  }
+
+  for (let xi = 0; xi < xSpans.length - 1; xi += 1) {
+    for (let zi = 0; zi < zSpans.length - 2; zi += 1) {
+      const lowerDepth = depths[xi][zi];
+      const upperDepth = depths[xi][zi + 1];
+      if (lowerDepth === upperDepth) continue;
+      const zEdge = -s / 2 + zSpans[zi + 1];
+      const y0 = -s / 2 + Math.min(lowerDepth, upperDepth);
+      const y1 = -s / 2 + Math.max(lowerDepth, upperDepth);
+      appendFace(positions, indices, [-s / 2 + xSpans[xi], y0, zEdge], [-s / 2 + xSpans[xi + 1], y0, zEdge], [-s / 2 + xSpans[xi + 1], y1, zEdge], [-s / 2 + xSpans[xi], y1, zEdge]);
+    }
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function doorDepthGrid() {
+  const r = DOOR_RAIL_MM;
+  const mid0 = CELL_SIZE_MM - DOOR_MID_RAIL_MM / 2;
+  const mid1 = CELL_SIZE_MM + DOOR_MID_RAIL_MM / 2;
+  const handle0 = CELL_SIZE_MM * 0.68;
+  const handle1 = CELL_SIZE_MM * 0.8;
+  const handleZ0 = CELL_SIZE_MM * 0.86;
+  const handleZ1 = CELL_SIZE_MM * 1.06;
+  const xSpans = [0, r, handle0, handle1, CELL_SIZE_MM - r, CELL_SIZE_MM];
+  const zSpans = [0, r, handleZ0, mid0, mid1, handleZ1, CELL_SIZE_MM * 2 - r, CELL_SIZE_MM * 2];
+  const depths = [];
+  for (let xi = 0; xi < xSpans.length - 1; xi += 1) {
+    depths[xi] = [];
+    for (let zi = 0; zi < zSpans.length - 1; zi += 1) {
+      const x0 = xSpans[xi];
+      const x1 = xSpans[xi + 1];
+      const z0 = zSpans[zi];
+      const z1 = zSpans[zi + 1];
+      const raised = x0 < r
+        || x1 > CELL_SIZE_MM - r
+        || z0 < r
+        || z1 > CELL_SIZE_MM * 2 - r
+        || (z0 < mid1 && z1 > mid0)
+        || (x0 >= handle0 && x1 <= handle1 && z0 >= handleZ0 && z1 <= handleZ1);
+      depths[xi][zi] = raised ? 0 : DOOR_BACK_RECESS_MM;
+    }
+  }
+  return { xSpans, zSpans, depths };
 }
 
 function createWindowCrossGeometry() {
@@ -381,10 +494,12 @@ function createMaterialTexture(material, seed) {
 }
 
 function updateCursorMesh() {
+  const heightCells = currentShapeHeightCells();
+  cursorMesh.scale.set(1, 1, heightCells);
   cursorMesh.position.set(
     state.cursor.x * CELL_SIZE_MM + CELL_SIZE_MM / 2,
     state.cursor.y * CELL_SIZE_MM + CELL_SIZE_MM / 2,
-    state.cursor.z * CELL_SIZE_MM + CELL_SIZE_MM / 2
+    state.cursor.z * CELL_SIZE_MM + (heightCells * CELL_SIZE_MM) / 2
   );
 }
 
@@ -541,7 +656,7 @@ function handleWheel(event) {
 function moveCursor(dx, dy, dz) {
   state.cursor.x = clamp(state.cursor.x + dx, 0, state.project.workspaceCells.x - 1);
   state.cursor.y = clamp(state.cursor.y + dy, 0, state.project.workspaceCells.y - 1);
-  state.cursor.z = clamp(state.cursor.z + dz, 0, state.project.workspaceCells.z - 1);
+  state.cursor.z = clamp(state.cursor.z + dz, 0, maxCursorZ());
   updateCursorMesh();
   updateUi();
 }
@@ -582,7 +697,7 @@ function projectPointerToCursor() {
   const next = {
     x: clamp(Math.floor(hit.x / CELL_SIZE_MM), 0, state.project.workspaceCells.x - 1),
     y: clamp(Math.floor(hit.y / CELL_SIZE_MM), 0, state.project.workspaceCells.y - 1),
-    z: state.cursor.z
+    z: clamp(state.cursor.z, 0, maxCursorZ())
   };
   state.cursor = next;
   return true;
@@ -619,6 +734,19 @@ function selectBlock(position) {
   updateCursorMesh();
   updateUi();
   renderProject();
+}
+
+function clampCursorToSelectedShape() {
+  state.cursor.z = clamp(state.cursor.z, 0, maxCursorZ());
+  updateCursorMesh();
+}
+
+function maxCursorZ() {
+  return Math.max(0, state.project.workspaceCells.z - currentShapeHeightCells());
+}
+
+function currentShapeHeightCells() {
+  return SHAPES[state.selectedShape]?.heightCells || 1;
 }
 
 function commitProject(project) {

@@ -44,6 +44,13 @@ export const SHAPES = Object.freeze({
     label: "十字窗",
     maxHeightMm: CELL_SIZE_MM,
     panelThicknessMm: 10
+  },
+  door_panel: {
+    id: "door_panel",
+    label: "門",
+    maxHeightMm: CELL_SIZE_MM * 2,
+    panelThicknessMm: 10,
+    heightCells: 2
   }
 });
 

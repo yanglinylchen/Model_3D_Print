@@ -4,6 +4,7 @@ import { MAX_BLOCKS } from "../src/core/constants.js";
 import { ProjectHistory } from "../src/core/history.js";
 import {
   createProject,
+  getBlock,
   getThirtyDegreeHeightMm,
   makeBlock,
   normalizeProject,
@@ -88,6 +89,35 @@ test("window cross shape occupies one regular grid cell", () => {
   assert.equal(placed.ok, true);
   assert.equal(placed.block.shape, "window_cross");
   assert.equal(placed.project.blocks.length, 1);
+});
+
+test("door panel occupies two vertical grid cells", () => {
+  let project = createProject({ workspaceCells: { x: 4, y: 4, z: 4 } });
+  const placed = setBlock(project, makeBlock({ x: 1, y: 1, z: 1, shape: "door_panel", material: "plain" }));
+  assert.equal(placed.ok, true);
+  project = placed.project;
+  assert.equal(getBlock(project, { x: 1, y: 1, z: 1 }).shape, "door_panel");
+  assert.equal(getBlock(project, { x: 1, y: 1, z: 2 }).shape, "door_panel");
+
+  const overlap = setBlock(project, makeBlock({ x: 1, y: 1, z: 2, material: "plain" }));
+  assert.equal(overlap.ok, false);
+  assert.match(overlap.reason, /占用/);
+
+  const outOfBounds = setBlock(project, makeBlock({ x: 2, y: 1, z: 3, shape: "door_panel", material: "plain" }));
+  assert.equal(outOfBounds.ok, false);
+  assert.match(outOfBounds.reason, /超出工作空間/);
+
+  const resized = resizeWorkspace(project, { x: 4, y: 4, z: 2 });
+  assert.equal(resized.ok, false);
+  assert.match(resized.reason, /超出邊界/);
+});
+
+test("door panel does not support itself above a restricted prism", () => {
+  let project = createProject({ workspaceCells: { x: 4, y: 4, z: 4 } });
+  project = setBlock(project, makeBlock({ x: 1, y: 1, z: 0, shape: "prism_45", material: "plain" })).project;
+  const unsupportedDoor = setBlock(project, makeBlock({ x: 1, y: 1, z: 1, shape: "door_panel", material: "plain" }));
+  assert.equal(unsupportedDoor.ok, false);
+  assert.match(unsupportedDoor.reason, /斜面方塊/);
 });
 
 test("undo history retains only 50 steps", () => {

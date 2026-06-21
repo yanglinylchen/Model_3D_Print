@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="門">
+  <defs>
+    <linearGradient id="doorFace" x1="24" x2="72" y1="8" y2="88" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#e9ded2"/>
+      <stop offset="1" stop-color="#9d8b78"/>
+    </linearGradient>
+  </defs>
+  <path d="M24 10h48v76H24z" fill="#4d4034"/>
+  <path d="M30 16h36v64H30z" fill="url(#doorFace)"/>
+  <path d="M36 24h24v20H36V24Zm0 30h24v18H36V54Z" fill="#b9ab9b"/>
+  <path d="M30 16h36v8H30V16Zm0 28h36v8H30v-8Zm0 28h36v8H30v-8Zm0-56h7v64h-7V16Zm29 0h7v64h-7V16Z" fill="#f0e8dc"/>
+  <rect x="55" y="48" width="6" height="8" rx="2" fill="#5d5146"/>
+</svg>
