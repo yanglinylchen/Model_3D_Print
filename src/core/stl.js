@@ -1,4 +1,6 @@
-import { CELL_SIZE_MM, MATERIALS, PRINT_DEFAULTS, SHAPES } from "./constants.js";
+import { CELL_SIZE_MM, SHAPES } from "./constants.js";
+
+const PRISM_WELD_OVERLAP_MM = 0.08;
 
 export function exportAsciiStl(project, name = project.name || "model_3d_print") {
   const triangles = [];
@@ -22,39 +24,13 @@ export function exportAsciiStl(project, name = project.name || "model_3d_print")
     triangleCount: repaired.length,
     repairNotes: [
       "已合併可安全處理的幾何資料",
-      "已保留材質浮雕與接縫需求的輸出路徑"
+      "已使用列印安全模式輸出閉合外殼"
     ]
   };
 }
 
 export function reliefTrianglesForBlock(project, block) {
-  if (block.shape !== "cube") return [];
-  if (block.material === "plain") return [];
-  const material = MATERIALS[block.material] || MATERIALS.brick;
-  const depth = Math.min(material.reliefDepthMm, PRINT_DEFAULTS.maxReliefMm);
-  const x = block.x * CELL_SIZE_MM;
-  const y = block.y * CELL_SIZE_MM;
-  const z = block.z * CELL_SIZE_MM;
-  const size = CELL_SIZE_MM;
-  const top = z + (SHAPES[block.shape]?.maxHeightMm || CELL_SIZE_MM);
-  const boxes = [];
-
-  if (isFaceExposed(project, block, "top")) {
-    boxes.push(...faceReliefBoxes(block, "top", x, y, z, size, top - z, depth));
-  }
-  if (isFaceExposed(project, block, "east")) {
-    boxes.push(...faceReliefBoxes(block, "east", x, y, z, size, top - z, depth));
-  }
-  if (isFaceExposed(project, block, "west")) {
-    boxes.push(...faceReliefBoxes(block, "west", x, y, z, size, top - z, depth));
-  }
-  if (isFaceExposed(project, block, "north")) {
-    boxes.push(...faceReliefBoxes(block, "north", x, y, z, size, top - z, depth));
-  }
-  if (isFaceExposed(project, block, "south")) {
-    boxes.push(...faceReliefBoxes(block, "south", x, y, z, size, top - z, depth));
-  }
-  return boxes.flatMap((box) => cuboidTriangles(box.min, box.max));
+  return [];
 }
 
 export function trianglesForBlock(block, project = null) {
@@ -102,12 +78,12 @@ function cubeTriangles(x, y, z, size, block, project) {
   if (!project) return cuboidTriangles([x, y, z], [x + size, y + size, z + size]);
   const vertices = cubeVertices([x, y, z], [x + size, y + size, z + size]);
   const faces = [];
-  if (isFaceExposed(project, block, "bottom")) faces.push([vertices.p000, vertices.p100, vertices.p110, vertices.p010]);
-  if (isFaceExposed(project, block, "top")) faces.push([vertices.p001, vertices.p011, vertices.p111, vertices.p101]);
-  if (isFaceExposed(project, block, "south")) faces.push([vertices.p000, vertices.p001, vertices.p101, vertices.p100]);
-  if (isFaceExposed(project, block, "east")) faces.push([vertices.p100, vertices.p101, vertices.p111, vertices.p110]);
-  if (isFaceExposed(project, block, "north")) faces.push([vertices.p110, vertices.p111, vertices.p011, vertices.p010]);
-  if (isFaceExposed(project, block, "west")) faces.push([vertices.p010, vertices.p011, vertices.p001, vertices.p000]);
+  if (shouldEmitCubeFace(project, block, "bottom")) faces.push([vertices.p000, vertices.p100, vertices.p110, vertices.p010]);
+  if (shouldEmitCubeFace(project, block, "top")) faces.push([vertices.p001, vertices.p011, vertices.p111, vertices.p101]);
+  if (shouldEmitCubeFace(project, block, "south")) faces.push([vertices.p000, vertices.p001, vertices.p101, vertices.p100]);
+  if (shouldEmitCubeFace(project, block, "east")) faces.push([vertices.p100, vertices.p101, vertices.p111, vertices.p110]);
+  if (shouldEmitCubeFace(project, block, "north")) faces.push([vertices.p110, vertices.p111, vertices.p011, vertices.p010]);
+  if (shouldEmitCubeFace(project, block, "west")) faces.push([vertices.p010, vertices.p011, vertices.p001, vertices.p000]);
   return facesToTriangles(faces);
 }
 
@@ -136,14 +112,7 @@ function cubeVertices(min, max) {
   };
 }
 
-function reliefBox(x1, y1, z1, x2, y2, z2) {
-  return {
-    min: [Math.min(x1, x2), Math.min(y1, y2), Math.min(z1, z2)],
-    max: [Math.max(x1, x2), Math.max(y1, y2), Math.max(z1, z2)]
-  };
-}
-
-function isFaceExposed(project, block, face) {
+function neighborAt(project, block, face) {
   const offsets = {
     bottom: [0, 0, -1],
     top: [0, 0, 1],
@@ -153,102 +122,42 @@ function isFaceExposed(project, block, face) {
     south: [0, -1, 0]
   };
   const [dx, dy, dz] = offsets[face];
-  return !project.blocks.some((other) => other.x === block.x + dx && other.y === block.y + dy && other.z === block.z + dz);
+  return project.blocks.find((other) => other.x === block.x + dx && other.y === block.y + dy && other.z === block.z + dz) || null;
 }
 
-function faceReliefBoxes(block, face, x, y, z, size, height, depth) {
-  const seed = `${block.textureSeed || block.material}-${face}-${block.rotation || 0}`;
-  const rects = materialReliefRects(block.material, seed, size, Math.max(height, PRINT_DEFAULTS.minFeatureMm));
-  return rects.map((rect) => rectToFaceBox(rect, face, x, y, z, size, height, depth));
+function shouldEmitCubeFace(project, block, face) {
+  const neighbor = neighborAt(project, block, face);
+  if (!neighbor) return true;
+  return neighbor.shape !== "cube";
 }
 
-function materialReliefRects(material, seed, width, height) {
-  if (material === "brick") return brickReliefRects(seed, width, height);
-  return [];
-}
-
-function brickReliefRects(seed, width, height) {
-  const rng = seededRandom(seed);
-  const rects = [];
-  const mortar = PRINT_DEFAULTS.seamRecessDepthMm / 2;
-  const rows = height < 35 ? 3 : 4;
-  const rowHeight = (height - mortar * (rows + 1)) / rows;
-
-  for (let row = 0; row < rows; row += 1) {
-    const v1 = mortar + row * (rowHeight + mortar);
-    const v2 = v1 + rowHeight;
-    const cuts = row % 2 === 0
-      ? [0, width * (0.48 + rng() * 0.08), width]
-      : [0, width * (0.30 + rng() * 0.05), width * (0.66 + rng() * 0.06), width];
-    for (let i = 0; i < cuts.length - 1; i += 1) {
-      pushRect(rects, cuts[i] + mortar, v1, cuts[i + 1] - mortar, v2, 0.92 + rng() * 0.16);
-    }
-  }
-  return rects;
-}
-
-function pushRect(rects, u1, v1, u2, v2, heightScale = 1) {
-  const minU = Math.max(PRINT_DEFAULTS.minFeatureMm, Math.min(u1, u2));
-  const maxU = Math.min(CELL_SIZE_MM - PRINT_DEFAULTS.minFeatureMm, Math.max(u1, u2));
-  const minV = Math.max(PRINT_DEFAULTS.minFeatureMm, Math.min(v1, v2));
-  const maxV = Math.min(CELL_SIZE_MM - PRINT_DEFAULTS.minFeatureMm, Math.max(v1, v2));
-  if (maxU - minU < PRINT_DEFAULTS.minFeatureMm || maxV - minV < PRINT_DEFAULTS.minFeatureMm) return;
-  rects.push({ u1: minU, v1: minV, u2: maxU, v2: maxV, heightScale });
-}
-
-function rectToFaceBox(rect, face, x, y, z, size, height, depth) {
-  const relief = Math.max(PRINT_DEFAULTS.minFeatureMm, depth * rect.heightScale);
-  const top = z + height;
-  if (face === "top") {
-    return reliefBox(x + rect.u1, y + rect.v1, top, x + rect.u2, y + rect.v2, top + relief);
-  }
-  if (face === "east") {
-    return reliefBox(x + size, y + rect.u1, z + rect.v1, x + size + relief, y + rect.u2, z + rect.v2);
-  }
-  if (face === "west") {
-    return reliefBox(x - relief, y + rect.u1, z + rect.v1, x, y + rect.u2, z + rect.v2);
-  }
-  if (face === "north") {
-    return reliefBox(x + rect.u1, y + size, z + rect.v1, x + rect.u2, y + size + relief, z + rect.v2);
-  }
-  return reliefBox(x + rect.u1, y - relief, z + rect.v1, x + rect.u2, y, z + rect.v2);
-}
-
-function seededRandom(seed) {
-  let value = hashString(seed);
-  return () => {
-    value |= 0;
-    value = (value + 0x6D2B79F5) | 0;
-    let t = Math.imul(value ^ (value >>> 15), 1 | value);
-    t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function hashString(input) {
-  let hash = 2166136261;
-  for (const char of String(input)) {
-    hash ^= char.charCodeAt(0);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
+function hasAnyNeighbor(project, block) {
+  if (!project) return false;
+  return ["bottom", "top", "east", "west", "north", "south"].some((face) => neighborAt(project, block, face));
 }
 
 function triangularPrismTriangles(x, y, z, height, block, project) {
   const size = CELL_SIZE_MM;
+  const weld = hasAnyNeighbor(project, block) ? PRISM_WELD_OVERLAP_MM : 0;
+  const x0 = x - weld;
+  const x1 = x + size + weld;
+  const y0 = y - weld;
+  const y1 = y + size + weld;
+  const z0 = z > 0 ? z - weld : z;
   const h = Math.min(height, size);
-  const a = [x, y, z];
-  const b = [x + size, y, z];
-  const c = [x + size, y, z + h];
-  const d = [x, y + size, z];
-  const e = [x + size, y + size, z];
-  const f = [x + size, y + size, z + h];
-  const faces = [];
-  if (!project || isFaceExposed(project, block, "south")) faces.push([a, b, c]);
-  if (!project || isFaceExposed(project, block, "north")) faces.push([d, f, e]);
-  if (!project || isFaceExposed(project, block, "bottom")) faces.push([a, d, e, b]);
-  if (!project || isFaceExposed(project, block, "east")) faces.push([b, e, f, c]);
-  faces.push([c, f, d, a]);
+  const a = [x0, y0, z0];
+  const b = [x1, y0, z0];
+  const c = [x1, y0, z + h];
+  const d = [x0, y1, z0];
+  const e = [x1, y1, z0];
+  const f = [x1, y1, z + h];
+  const faces = [
+    [a, b, c],
+    [d, f, e],
+    [a, d, e, b],
+    [b, e, f, c],
+    [c, f, d, a]
+  ];
   return rotateTrianglesZ(facesToTriangles(faces), [x + size / 2, y + size / 2], block.rotation || 0);
 }
 

@@ -12,7 +12,7 @@ test("exports non-empty ASCII STL for a simple cube", () => {
   assert.equal(exported.ok, true);
   assert.match(exported.stl, /^solid Cube_STL/);
   assert.match(exported.stl, /facet normal/);
-  assert.ok(exported.triangleCount > 12);
+  assert.equal(exported.triangleCount, 12);
 });
 
 test("cube STL keeps full 50mm block footprint without physical gap", () => {
@@ -72,7 +72,7 @@ test("plain prism roof row exports as closed manifold shell", () => {
   assert.deepEqual(nonManifoldEdges(exported.stl), []);
 });
 
-test("brick STL export generates dense procedural relief geometry", () => {
+test("brick cube STL uses print-safe shell geometry without relief shells", () => {
   const project = createProject({ name: "Material Relief" });
   const placed = setBlock(project, makeBlock({
     x: 0,
@@ -83,8 +83,20 @@ test("brick STL export generates dense procedural relief geometry", () => {
   }));
   const exported = exportAsciiStl(placed.project);
   assert.equal(exported.ok, true);
-  assert.ok(exported.triangleCount > 500, `expected dense brick geometry, got ${exported.triangleCount}`);
-  assert.ok(exported.stl.includes("vertex 0.5"), "expected 1mm seam recess brick relief vertices");
+  assert.equal(exported.triangleCount, 12);
+  assert.ok(!exported.stl.includes("vertex 0.5"), "print-safe STL should not contain relief seam vertices");
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+});
+
+test("cube next to triangular prism uses weld overlap instead of edge-only contact", () => {
+  let project = createProject({ name: "Side Roof", workspaceCells: { x: 4, y: 4, z: 4 } });
+  project = setBlock(project, makeBlock({ x: 0, y: 0, z: 1, material: "brick" })).project;
+  project = setBlock(project, makeBlock({ x: 1, y: 0, z: 1, shape: "prism_45", material: "plain" })).project;
+  const exported = exportAsciiStl(project);
+  assert.equal(exported.ok, true);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+  const xValues = [...exported.stl.matchAll(/vertex ([\d.-]+) [\d.-]+ [\d.-]+/g)].map((match) => Number(match[1]));
+  assert.ok(Math.max(...xValues) > 100, "expected prism weld overlap to avoid exact edge-only contact");
 });
 
 test("brick triangular prisms export clean prism geometry without cube relief", () => {
