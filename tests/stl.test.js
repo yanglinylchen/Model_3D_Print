@@ -12,7 +12,7 @@ test("exports non-empty ASCII STL for a simple cube", () => {
   assert.equal(exported.ok, true);
   assert.match(exported.stl, /^solid Cube_STL/);
   assert.match(exported.stl, /facet normal/);
-  assert.ok(exported.triangleCount >= 12);
+  assert.ok(exported.triangleCount > 12);
 });
 
 test("blocks STL export for an empty model", () => {
@@ -20,4 +20,3 @@ test("blocks STL export for an empty model", () => {
   assert.equal(exported.ok, false);
   assert.match(exported.reason, /沒有可輸出/);
 });
-

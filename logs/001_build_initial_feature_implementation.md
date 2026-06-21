@@ -41,6 +41,7 @@ Implemented the first runnable Model 3D Print desktop app slice using Electron a
 - Roof support placement rule for 30-degree and 45-degree prism blocks.
 - Roof support invariant also blocks deleting a side/top support when that deletion would leave a block unsupported above a prism.
 - ASCII STL export foundation with closed-volume triangle generation, conservative repair scaffold, and validation.
+- STL export includes first-pass material-specific procedural relief geometry on exposed top/east/north faces.
 - Visual smoke script using Playwright Electron mode.
 
 ## Checks Run
@@ -61,7 +62,7 @@ Implemented the first runnable Model 3D Print desktop app slice using Electron a
 
 ## Notes
 
-- STL relief export is implemented as a foundation path with material relief offsets and conservative mesh repair scaffolding. Future iterations should deepen the procedural exposed-face relief patterns for each material while preserving the current tests.
+- STL relief export now includes first-pass material-specific procedural geometry. Future iterations should broaden exposed-face coverage and refine patterns while preserving the current tests.
 - The app currently uses localStorage for autosave recovery. Native file save/open uses Electron dialogs.
 - Playwright visual smoke required launching Electron as a GUI app.
 - macOS package currently uses the default Electron icon and is unsigned.
