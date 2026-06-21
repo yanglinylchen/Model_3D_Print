@@ -16,6 +16,8 @@ Fixed user-reported interaction and STL material issues.
 - STL cube output now uses rounded-box geometry for approximate R-corner output.
 - STL cube output keeps the full 50mm footprint instead of shrinking blocks and creating full physical gaps.
 - STL export includes first-pass material-specific relief boxes on exposed faces.
+- Packaged macOS app no longer depends on unpackaged Three example modules for STL export.
+- Packaged macOS app now has a smoke test that verifies renderer startup, WebGL rendering, material controls, and mouse placement.
 
 ## Changed Files
 
@@ -25,7 +27,9 @@ Fixed user-reported interaction and STL material issues.
 - `src/core/stl.js`
 - `tests/stl.test.js`
 - `scripts/visual_smoke.mjs`
+- `scripts/packaged_smoke.mjs`
 - `reports/visual_smoke.png`
+- `reports/packaged_smoke.png`
 
 ## Checks Run
 
@@ -33,6 +37,7 @@ Fixed user-reported interaction and STL material issues.
 - `npm run build:check`
 - `npm run visual:smoke`
 - `npm run package:mac`
+- `npm run packaged:smoke`
 
 ## Check Results
 
@@ -40,10 +45,11 @@ Fixed user-reported interaction and STL material issues.
 - Build/syntax check: pass.
 - Visual smoke: pass, including mouse placement block-count assertion.
 - macOS package: pass.
+- Packaged smoke: pass, including renderer startup and mouse placement block-count assertion.
 
 ## Notes
 
-- Renderer uses an import map so Three example modules can resolve `three` in Electron file mode.
+- Renderer uses an import map for the main Three module in Electron file mode.
+- STL rounded cube generation is local project code so packaged builds do not depend on missing `three/examples` files.
 - Viewport material appearance is now visible, but future work can add stronger in-scene relief preview if needed.
 - STL rounded edges use rounded-box geometry for cube blocks. Triangular prism rounded-edge refinement remains a future hardening item.
-

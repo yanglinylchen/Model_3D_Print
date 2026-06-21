@@ -1,4 +1,3 @@
-import { RoundedBoxGeometry } from "../../node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { CELL_SIZE_MM, MATERIALS, PRINT_DEFAULTS, SHAPES } from "./constants.js";
 
 export function exportAsciiStl(project, name = project.name || "model_3d_print") {
@@ -92,8 +91,7 @@ export function repairTriangles(triangles) {
 }
 
 function cubeTriangles(x, y, z, size, block) {
-  const geometry = new RoundedBoxGeometry(size, size, size, 5, PRINT_DEFAULTS.roundedEdgeRadiusMm);
-  return geometryToTriangles(geometry, [x + size / 2, y + size / 2, z + size / 2]);
+  return roundedBoxTriangles(x, y, z, size, PRINT_DEFAULTS.roundedEdgeRadiusMm, 5);
 }
 
 function cuboidTriangles(min, max) {
@@ -196,29 +194,57 @@ function triangularPrismTriangles(x, y, z, height, block) {
   ];
 }
 
-function geometryToTriangles(geometry, offset) {
-  const position = geometry.getAttribute("position");
-  const index = geometry.index;
+function roundedBoxTriangles(x, y, z, size, radius, segments) {
+  const center = [x + size / 2, y + size / 2, z + size / 2];
+  const half = size / 2;
+  const inner = half - radius;
   const triangles = [];
-  const readVertex = (vertexIndex) => [
-    position.getX(vertexIndex) + offset[0],
-    position.getY(vertexIndex) + offset[1],
-    position.getZ(vertexIndex) + offset[2]
+  const axes = [
+    { axis: 0, sign: 1 },
+    { axis: 0, sign: -1 },
+    { axis: 1, sign: 1 },
+    { axis: 1, sign: -1 },
+    { axis: 2, sign: 1 },
+    { axis: 2, sign: -1 }
   ];
-  if (index) {
-    for (let i = 0; i < index.count; i += 3) {
-      triangles.push([
-        readVertex(index.getX(i)),
-        readVertex(index.getX(i + 1)),
-        readVertex(index.getX(i + 2))
-      ]);
+
+  for (const face of axes) {
+    const uAxis = face.axis === 0 ? 1 : 0;
+    const vAxis = face.axis === 2 ? 1 : 2;
+    const grid = [];
+    for (let i = 0; i <= segments; i += 1) {
+      const row = [];
+      for (let j = 0; j <= segments; j += 1) {
+        const p = [0, 0, 0];
+        p[face.axis] = face.sign * half;
+        p[uAxis] = -half + (size * i) / segments;
+        p[vAxis] = -half + (size * j) / segments;
+        row.push(roundBoxPoint(p, center, inner, radius));
+      }
+      grid.push(row);
     }
-  } else {
-    for (let i = 0; i < position.count; i += 3) {
-      triangles.push([readVertex(i), readVertex(i + 1), readVertex(i + 2)]);
+    for (let i = 0; i < segments; i += 1) {
+      for (let j = 0; j < segments; j += 1) {
+        const a = grid[i][j];
+        const b = grid[i + 1][j];
+        const c = grid[i + 1][j + 1];
+        const d = grid[i][j + 1];
+        if (face.sign > 0) {
+          triangles.push([a, b, c], [a, c, d]);
+        } else {
+          triangles.push([a, c, b], [a, d, c]);
+        }
+      }
     }
   }
   return triangles;
+}
+
+function roundBoxPoint(point, center, inner, radius) {
+  const clamped = point.map((value) => Math.max(-inner, Math.min(inner, value)));
+  const delta = point.map((value, index) => value - clamped[index]);
+  const length = Math.hypot(delta[0], delta[1], delta[2]) || 1;
+  return clamped.map((value, index) => center[index] + value + (delta[index] / length) * radius);
 }
 
 function facesToTriangles(faces) {
