@@ -3,25 +3,25 @@
   "name": "Small House",
   "blockSizeMm": 50,
   "workspaceCells": { "x": 10, "y": 8, "z": 7 },
-  "materials": ["brick", "wood", "stone_slab", "wool"],
+  "materials": ["brick", "plain"],
   "blocks": [
-    { "x": 2, "y": 2, "z": 0, "shape": "cube", "material": "stone_slab", "rotation": 0, "textureSeed": "stone-foundation-001" },
-    { "x": 3, "y": 2, "z": 0, "shape": "cube", "material": "stone_slab", "rotation": 0, "textureSeed": "stone-foundation-002" },
-    { "x": 4, "y": 2, "z": 0, "shape": "cube", "material": "stone_slab", "rotation": 0, "textureSeed": "stone-foundation-003" },
+    { "x": 2, "y": 2, "z": 0, "shape": "cube", "material": "plain", "rotation": 0, "textureSeed": "plain-foundation-001" },
+    { "x": 3, "y": 2, "z": 0, "shape": "cube", "material": "plain", "rotation": 0, "textureSeed": "plain-foundation-002" },
+    { "x": 4, "y": 2, "z": 0, "shape": "cube", "material": "plain", "rotation": 0, "textureSeed": "plain-foundation-003" },
     { "x": 2, "y": 3, "z": 0, "shape": "cube", "material": "brick", "rotation": 0, "textureSeed": "brick-wall-001" },
     { "x": 4, "y": 3, "z": 0, "shape": "cube", "material": "brick", "rotation": 0, "textureSeed": "brick-wall-002" },
     { "x": 2, "y": 4, "z": 0, "shape": "cube", "material": "brick", "rotation": 0, "textureSeed": "brick-wall-003" },
-    { "x": 3, "y": 4, "z": 0, "shape": "cube", "material": "wood", "rotation": 90, "textureSeed": "wood-door-001" },
+    { "x": 3, "y": 4, "z": 0, "shape": "cube", "material": "plain", "rotation": 90, "textureSeed": "plain-door-001" },
     { "x": 4, "y": 4, "z": 0, "shape": "cube", "material": "brick", "rotation": 0, "textureSeed": "brick-wall-004" },
     { "x": 2, "y": 3, "z": 1, "shape": "cube", "material": "brick", "rotation": 0, "textureSeed": "brick-wall-005" },
-    { "x": 3, "y": 3, "z": 1, "shape": "cube", "material": "wool", "rotation": 0, "textureSeed": "wool-window-001" },
+    { "x": 3, "y": 3, "z": 1, "shape": "cube", "material": "plain", "rotation": 0, "textureSeed": "plain-window-001" },
     { "x": 4, "y": 3, "z": 1, "shape": "cube", "material": "brick", "rotation": 0, "textureSeed": "brick-wall-006" },
     { "x": 2, "y": 4, "z": 1, "shape": "cube", "material": "brick", "rotation": 0, "textureSeed": "brick-wall-007" },
     { "x": 3, "y": 4, "z": 1, "shape": "cube", "material": "brick", "rotation": 0, "textureSeed": "brick-wall-008" },
     { "x": 4, "y": 4, "z": 1, "shape": "cube", "material": "brick", "rotation": 0, "textureSeed": "brick-wall-009" },
-    { "x": 2, "y": 3, "z": 2, "shape": "prism_45", "material": "wood", "rotation": 0, "textureSeed": "wood-roof-001" },
-    { "x": 3, "y": 3, "z": 2, "shape": "prism_45", "material": "wood", "rotation": 0, "textureSeed": "wood-roof-002" },
-    { "x": 4, "y": 3, "z": 2, "shape": "prism_45", "material": "wood", "rotation": 0, "textureSeed": "wood-roof-003" }
+    { "x": 2, "y": 3, "z": 2, "shape": "prism_45", "material": "plain", "rotation": 0, "textureSeed": "plain-roof-001" },
+    { "x": 3, "y": 3, "z": 2, "shape": "prism_45", "material": "plain", "rotation": 0, "textureSeed": "plain-roof-002" },
+    { "x": 4, "y": 3, "z": 2, "shape": "prism_45", "material": "plain", "rotation": 0, "textureSeed": "plain-roof-003" }
   ]
 }
 

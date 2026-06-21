@@ -3,14 +3,14 @@
   "name": "Tower Wall",
   "blockSizeMm": 50,
   "workspaceCells": { "x": 10, "y": 6, "z": 8 },
-  "materials": ["brick", "wood", "stone_slab", "wool"],
+  "materials": ["brick", "plain"],
   "blocks": [
-    { "x": 1, "y": 2, "z": 0, "shape": "cube", "material": "stone_slab", "rotation": 0, "textureSeed": "wall-001" },
-    { "x": 2, "y": 2, "z": 0, "shape": "cube", "material": "stone_slab", "rotation": 0, "textureSeed": "wall-002" },
-    { "x": 3, "y": 2, "z": 0, "shape": "cube", "material": "stone_slab", "rotation": 0, "textureSeed": "wall-003" },
-    { "x": 4, "y": 2, "z": 0, "shape": "cube", "material": "stone_slab", "rotation": 0, "textureSeed": "wall-004" },
-    { "x": 5, "y": 2, "z": 0, "shape": "cube", "material": "stone_slab", "rotation": 0, "textureSeed": "wall-005" },
-    { "x": 6, "y": 2, "z": 0, "shape": "cube", "material": "stone_slab", "rotation": 0, "textureSeed": "wall-006" },
+    { "x": 1, "y": 2, "z": 0, "shape": "cube", "material": "plain", "rotation": 0, "textureSeed": "wall-001" },
+    { "x": 2, "y": 2, "z": 0, "shape": "cube", "material": "plain", "rotation": 0, "textureSeed": "wall-002" },
+    { "x": 3, "y": 2, "z": 0, "shape": "cube", "material": "plain", "rotation": 0, "textureSeed": "wall-003" },
+    { "x": 4, "y": 2, "z": 0, "shape": "cube", "material": "plain", "rotation": 0, "textureSeed": "wall-004" },
+    { "x": 5, "y": 2, "z": 0, "shape": "cube", "material": "plain", "rotation": 0, "textureSeed": "wall-005" },
+    { "x": 6, "y": 2, "z": 0, "shape": "cube", "material": "plain", "rotation": 0, "textureSeed": "wall-006" },
     { "x": 1, "y": 2, "z": 1, "shape": "cube", "material": "brick", "rotation": 0, "textureSeed": "wall-007" },
     { "x": 3, "y": 2, "z": 1, "shape": "cube", "material": "brick", "rotation": 0, "textureSeed": "wall-008" },
     { "x": 5, "y": 2, "z": 1, "shape": "cube", "material": "brick", "rotation": 0, "textureSeed": "wall-009" },
@@ -21,9 +21,9 @@
     { "x": 4, "y": 2, "z": 2, "shape": "cube", "material": "brick", "rotation": 0, "textureSeed": "wall-014" },
     { "x": 5, "y": 2, "z": 2, "shape": "cube", "material": "brick", "rotation": 0, "textureSeed": "wall-015" },
     { "x": 6, "y": 2, "z": 2, "shape": "cube", "material": "brick", "rotation": 0, "textureSeed": "wall-016" },
-    { "x": 1, "y": 2, "z": 3, "shape": "cube", "material": "stone_slab", "rotation": 0, "textureSeed": "cap-001" },
-    { "x": 3, "y": 2, "z": 3, "shape": "cube", "material": "stone_slab", "rotation": 0, "textureSeed": "cap-002" },
-    { "x": 5, "y": 2, "z": 3, "shape": "cube", "material": "stone_slab", "rotation": 0, "textureSeed": "cap-003" }
+    { "x": 1, "y": 2, "z": 3, "shape": "cube", "material": "plain", "rotation": 0, "textureSeed": "cap-001" },
+    { "x": 3, "y": 2, "z": 3, "shape": "cube", "material": "plain", "rotation": 0, "textureSeed": "cap-002" },
+    { "x": 5, "y": 2, "z": 3, "shape": "cube", "material": "plain", "rotation": 0, "textureSeed": "cap-003" }
   ]
 }
 

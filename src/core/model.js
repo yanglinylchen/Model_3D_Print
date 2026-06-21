@@ -65,20 +65,20 @@ export function validateProject(project) {
 }
 
 export function normalizeBlock(block) {
+  const material = block.material
+    ? (MATERIALS[block.material] ? block.material : "plain")
+    : "brick";
   const normalized = {
     x: Number(block.x),
     y: Number(block.y),
     z: Number(block.z),
     shape: block.shape || "cube",
-    material: block.material || "brick",
+    material,
     rotation: Number(block.rotation || 0),
-    textureSeed: block.textureSeed || createTextureSeed(block.material || "brick")
+    textureSeed: block.textureSeed || createTextureSeed(material)
   };
   if (!SHAPES[normalized.shape]) {
     throw new Error(`不支援的形狀：${normalized.shape}`);
-  }
-  if (!MATERIALS[normalized.material]) {
-    throw new Error(`不支援的材質：${normalized.material}`);
   }
   return normalized;
 }

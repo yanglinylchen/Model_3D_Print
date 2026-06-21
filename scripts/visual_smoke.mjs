@@ -17,6 +17,8 @@ try {
   const viewport = await page.locator("#viewport").boundingBox();
   await page.mouse.click(viewport.x + viewport.width / 2, viewport.y + viewport.height / 2);
   await page.waitForTimeout(500);
+  await page.mouse.click(viewport.x + viewport.width / 2, viewport.y + viewport.height / 2 + 20);
+  await page.waitForTimeout(500);
   const metrics = await page.evaluate(() => {
     const canvas = document.querySelector("#viewport");
     const rect = canvas.getBoundingClientRect();
@@ -66,7 +68,7 @@ try {
   if (!metrics.toolbarText.includes("Model 3D Print")) {
     throw new Error("Toolbar brand text missing.");
   }
-  if (!metrics.blockCountText.includes("1 / 10000")) {
+  if (!metrics.blockCountText.includes("2 / 10000")) {
     throw new Error(`Mouse placement did not add a block: ${metrics.blockCountText}`);
   }
   console.log(JSON.stringify(metrics, null, 2));

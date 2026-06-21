@@ -22,7 +22,7 @@ export function exportAsciiStl(project, name = project.name || "model_3d_print")
     triangleCount: repaired.length,
     repairNotes: [
       "已合併可安全處理的幾何資料",
-      "已保留材質浮雕、R角和接縫需求的輸出路徑"
+      "已保留材質浮雕與接縫需求的輸出路徑"
     ]
   };
 }
@@ -97,7 +97,7 @@ export function repairTriangles(triangles) {
 }
 
 function cubeTriangles(x, y, z, size, block) {
-  return roundedBoxTriangles(x, y, z, size, PRINT_DEFAULTS.roundedEdgeRadiusMm, 5);
+  return cuboidTriangles([x, y, z], [x + size, y + size, z + size]);
 }
 
 function cuboidTriangles(min, max) {
@@ -141,6 +141,7 @@ function isFaceExposed(project, block, face) {
 }
 
 function faceReliefBoxes(block, face, x, y, z, size, height, depth) {
+  if (block.material === "plain" && face !== "top") return [];
   const seed = `${block.textureSeed || block.material}-${face}-${block.rotation || 0}`;
   const rects = materialReliefRects(block.material, seed, size, Math.max(height, PRINT_DEFAULTS.minFeatureMm));
   return rects.map((rect) => rectToFaceBox(rect, face, x, y, z, size, height, depth));
@@ -148,15 +149,13 @@ function faceReliefBoxes(block, face, x, y, z, size, height, depth) {
 
 function materialReliefRects(material, seed, width, height) {
   if (material === "brick") return brickReliefRects(seed, width, height);
-  if (material === "wood") return woodReliefRects(seed, width, height);
-  if (material === "stone_slab") return stoneReliefRects(seed, width, height);
-  return woolReliefRects(seed, width, height);
+  return plainReliefRects(width, height);
 }
 
 function brickReliefRects(seed, width, height) {
   const rng = seededRandom(seed);
   const rects = [];
-  const mortar = 1.35;
+  const mortar = PRINT_DEFAULTS.seamRecessDepthMm / 2;
   const rows = height < 35 ? 3 : 4;
   const rowHeight = (height - mortar * (rows + 1)) / rows;
 
@@ -173,72 +172,10 @@ function brickReliefRects(seed, width, height) {
   return rects;
 }
 
-function woodReliefRects(seed, width, height) {
-  const rng = seededRandom(seed);
+function plainReliefRects(width, height) {
   const rects = [];
-  const lines = 9;
-  for (let i = 0; i < lines; i += 1) {
-    let cursor = 4 + rng() * 4;
-    const base = 4 + i * ((height - 8) / (lines - 1)) + (rng() - 0.5) * 2;
-    const thickness = 0.8 + rng() * 1.2;
-    while (cursor < width - 5) {
-      const segment = 8 + rng() * 13;
-      const drift = (rng() - 0.5) * 3;
-      pushRect(rects, cursor, base + drift, Math.min(width - 4, cursor + segment), base + drift + thickness, 0.45 + rng() * 0.35);
-      cursor += segment + 2 + rng() * 5;
-    }
-  }
-  const knots = 1 + Math.floor(rng() * 2);
-  for (let i = 0; i < knots; i += 1) {
-    const cx = 14 + rng() * (width - 28);
-    const cy = 14 + rng() * (height - 28);
-    pushRect(rects, cx - 7, cy - 1.2, cx + 7, cy + 1.2, 0.9);
-    pushRect(rects, cx - 1.2, cy - 5, cx + 1.2, cy + 5, 0.75);
-    pushRect(rects, cx - 4, cy - 4, cx + 4, cy - 2.2, 0.55);
-    pushRect(rects, cx - 4, cy + 2.2, cx + 4, cy + 4, 0.55);
-  }
-  return rects;
-}
-
-function stoneReliefRects(seed, width, height) {
-  const rng = seededRandom(seed);
-  const rects = [];
-  const gap = 1.2;
-  const columns = jitteredCuts(width, [0, 0.31, 0.58, 0.82, 1], rng, 2.8);
-  const rows = jitteredCuts(height, [0, 0.28, 0.55, 0.78, 1], rng, 2.6);
-  for (let row = 0; row < rows.length - 1; row += 1) {
-    for (let col = 0; col < columns.length - 1; col += 1) {
-      const inset = gap + rng() * 0.8;
-      pushRect(
-        rects,
-        columns[col] + inset,
-        rows[row] + inset,
-        columns[col + 1] - inset,
-        rows[row + 1] - inset,
-        0.78 + rng() * 0.22
-      );
-    }
-  }
-  return rects;
-}
-
-function woolReliefRects(seed, width, height) {
-  const rng = seededRandom(seed);
-  const rects = [];
-  const spacing = 5.5;
-  for (let v = 4; v < height - 4; v += spacing) {
-    const offset = (rng() - 0.5) * 1.5;
-    pushRect(rects, 4, v + offset, width - 4, v + offset + 0.9, 0.45);
-  }
-  for (let u = 5.5; u < width - 4; u += spacing) {
-    const offset = (rng() - 0.5) * 1.5;
-    pushRect(rects, u + offset, 4, u + offset + 0.85, height - 4, 0.35);
-  }
-  for (let i = 0; i < 10; i += 1) {
-    const u = 5 + rng() * (width - 10);
-    const v = 5 + rng() * (height - 10);
-    pushRect(rects, u, v, u + 3 + rng() * 4, v + 0.7, 0.5);
-  }
+  const inset = PRINT_DEFAULTS.seamRecessDepthMm;
+  pushRect(rects, inset, inset, width - inset, height - inset, 1);
   return rects;
 }
 
@@ -267,14 +204,6 @@ function rectToFaceBox(rect, face, x, y, z, size, height, depth) {
     return reliefBox(x + rect.u1, y + size, z + rect.v1, x + rect.u2, y + size + relief, z + rect.v2);
   }
   return reliefBox(x + rect.u1, y - relief, z + rect.v1, x + rect.u2, y, z + rect.v2);
-}
-
-function jitteredCuts(size, fractions, rng, jitter) {
-  return fractions.map((fraction, index) => {
-    if (index === 0) return 0;
-    if (index === fractions.length - 1) return size;
-    return size * fraction + (rng() - 0.5) * jitter;
-  }).sort((a, b) => a - b);
 }
 
 function seededRandom(seed) {
@@ -316,59 +245,6 @@ function triangularPrismTriangles(x, y, z, height, block) {
       [c, f, d, a]
     ])
   ];
-}
-
-function roundedBoxTriangles(x, y, z, size, radius, segments) {
-  const center = [x + size / 2, y + size / 2, z + size / 2];
-  const half = size / 2;
-  const inner = half - radius;
-  const triangles = [];
-  const axes = [
-    { axis: 0, sign: 1 },
-    { axis: 0, sign: -1 },
-    { axis: 1, sign: 1 },
-    { axis: 1, sign: -1 },
-    { axis: 2, sign: 1 },
-    { axis: 2, sign: -1 }
-  ];
-
-  for (const face of axes) {
-    const uAxis = face.axis === 0 ? 1 : 0;
-    const vAxis = face.axis === 2 ? 1 : 2;
-    const grid = [];
-    for (let i = 0; i <= segments; i += 1) {
-      const row = [];
-      for (let j = 0; j <= segments; j += 1) {
-        const p = [0, 0, 0];
-        p[face.axis] = face.sign * half;
-        p[uAxis] = -half + (size * i) / segments;
-        p[vAxis] = -half + (size * j) / segments;
-        row.push(roundBoxPoint(p, center, inner, radius));
-      }
-      grid.push(row);
-    }
-    for (let i = 0; i < segments; i += 1) {
-      for (let j = 0; j < segments; j += 1) {
-        const a = grid[i][j];
-        const b = grid[i + 1][j];
-        const c = grid[i + 1][j + 1];
-        const d = grid[i][j + 1];
-        if (face.sign > 0) {
-          triangles.push([a, b, c], [a, c, d]);
-        } else {
-          triangles.push([a, c, b], [a, d, c]);
-        }
-      }
-    }
-  }
-  return triangles;
-}
-
-function roundBoxPoint(point, center, inner, radius) {
-  const clamped = point.map((value) => Math.max(-inner, Math.min(inner, value)));
-  const delta = point.map((value, index) => value - clamped[index]);
-  const length = Math.hypot(delta[0], delta[1], delta[2]) || 1;
-  return clamped.map((value, index) => center[index] + value + (delta[index] / length) * radius);
 }
 
 function facesToTriangles(faces) {

@@ -48,6 +48,7 @@ const state = {
   lastAutosaveAt: 0,
   cameraAngle: Math.PI / 4,
   cameraPitch: 0.62,
+  cameraLift: 0,
   pressedKeys: new Set(),
   warning: ""
 };
@@ -142,7 +143,7 @@ function renderMaterialControls() {
     const button = document.createElement("button");
     button.className = "material-button";
     button.dataset.material = material.id;
-    button.innerHTML = `<img src="${ASSET}/material_previews/${material.id === "stone_slab" ? "stone_slab" : material.id}.svg" alt=""><span>${material.label}</span>`;
+    button.innerHTML = `<img src="${ASSET}/material_previews/${material.id}.svg" alt=""><span>${material.label}</span>`;
     button.addEventListener("click", () => {
       state.selectedMaterial = material.id;
       updateUi();
@@ -291,29 +292,13 @@ function createMaterialTexture(material, seed) {
     context.strokeStyle = "#ef9c91";
     context.lineWidth = 3;
     for (let i = 0; i < 8; i += 1) line(context, 12 + rng() * 90, 16 + rng() * 92, 28 + rng() * 90, 16 + rng() * 92);
-  } else if (material === "wood") {
-    context.strokeStyle = "#6f421f";
-    context.lineWidth = 5;
-    for (let i = 0; i < 6; i += 1) {
-      const y = 18 + i * 18 + rng() * 5;
-      curve(context, 8, y, 46, y - 18 + rng() * 18, 120, y + rng() * 16);
-    }
-    context.strokeStyle = "#e0a15d";
-    context.lineWidth = 2;
-    curve(context, 12, 78, 54, 44, 118, 72);
-  } else if (material === "stone_slab") {
-    context.strokeStyle = "#646d6e";
-    context.lineWidth = 5;
-    for (let i = 0; i < 8; i += 1) line(context, rng() * 128, rng() * 128, rng() * 128, rng() * 128);
-    context.fillStyle = "rgba(255,255,255,0.22)";
-    for (let i = 0; i < 10; i += 1) context.fillRect(rng() * 120, rng() * 120, 5 + rng() * 12, 2 + rng() * 6);
   } else {
-    context.strokeStyle = "#c9c2b8";
-    context.lineWidth = 5;
-    for (let i = 0; i < 6; i += 1) curve(context, 0, 20 + i * 18, 42, 5 + i * 18, 84, 24 + i * 18, 128, 10 + i * 18);
-    context.strokeStyle = "#fffaf1";
-    context.lineWidth = 3;
-    for (let i = 0; i < 4; i += 1) curve(context, 10, 30 + i * 22, 60, 8 + i * 22, 118, 30 + i * 22);
+    context.strokeStyle = "#aeb4ae";
+    context.lineWidth = 4;
+    context.strokeRect(10, 10, 108, 108);
+    context.strokeStyle = "#eef0ec";
+    context.lineWidth = 2;
+    context.strokeRect(18, 18, 92, 92);
   }
 
   const texture = new THREE.CanvasTexture(canvas);
@@ -355,7 +340,7 @@ function updateCamera() {
   const center = new THREE.Vector3(
     (state.project.workspaceCells.x * CELL_SIZE_MM) / 2,
     (state.project.workspaceCells.y * CELL_SIZE_MM) / 2,
-    Math.max(120, (state.project.workspaceCells.z * CELL_SIZE_MM) / 2)
+    Math.max(120, (state.project.workspaceCells.z * CELL_SIZE_MM) / 2) + state.cameraLift
   );
   const distance = Math.max(
     520,
@@ -401,16 +386,17 @@ function handleViewportClick(event) {
   raycaster.setFromCamera(pointer, camera);
   const intersections = raycaster.intersectObjects(blockGroup.children, false);
   if (intersections.length > 0) {
-    const position = intersections[0].object.userData.position;
-    if (position) {
-      state.selected = { ...position };
-      const block = getBlock(state.project, position);
-      state.selectedMaterial = block.material;
-      state.selectedShape = block.shape;
-      state.cursor = { ...position };
+    const hit = intersections[0];
+    const hitPosition = hit.object.userData.position;
+    const next = positionAdjacentToHitFace(hit);
+    if (!event.shiftKey && next && !getBlock(state.project, next)) {
+      state.cursor = next;
       updateCursorMesh();
-      updateUi();
-      renderProject();
+      placeOrSelectAtCursor();
+      return;
+    }
+    if (hitPosition) {
+      selectBlock(hitPosition);
       return;
     }
   }
@@ -421,6 +407,17 @@ function handleViewportClick(event) {
 
 function handlePointerMove(event) {
   updatePointer(event);
+  raycaster.setFromCamera(pointer, camera);
+  const intersections = raycaster.intersectObjects(blockGroup.children, false);
+  if (intersections.length > 0) {
+    const next = positionAdjacentToHitFace(intersections[0]);
+    if (next) {
+      state.cursor = next;
+      updateCursorMesh();
+      updateUi();
+      return;
+    }
+  }
   if (projectPointerToCursor()) {
     updateCursorMesh();
     updateUi();
@@ -443,7 +440,7 @@ function handleKeydown(event) {
       return openProject();
     }
   }
-  if (["w", "a", "s", "d"].includes(key)) {
+  if (["w", "a", "s", "d", "q", "e"].includes(key)) {
     state.pressedKeys.add(key);
   }
   if (event.key === "ArrowLeft") moveCursor(-1, 0, 0);
@@ -479,10 +476,13 @@ function rotateCamera(delta) {
 function updateHeldCameraControls() {
   const yawStep = 0.035;
   const pitchStep = 0.018;
+  const liftStep = CELL_SIZE_MM * 0.22;
   if (state.pressedKeys.has("a")) state.cameraAngle -= yawStep;
   if (state.pressedKeys.has("d")) state.cameraAngle += yawStep;
   if (state.pressedKeys.has("w")) state.cameraPitch = clamp(state.cameraPitch + pitchStep, 0.22, 1.4);
   if (state.pressedKeys.has("s")) state.cameraPitch = clamp(state.cameraPitch - pitchStep, 0.22, 1.4);
+  if (state.pressedKeys.has("q")) state.cameraLift = clamp(state.cameraLift - liftStep, -1200, 1200);
+  if (state.pressedKeys.has("e")) state.cameraLift = clamp(state.cameraLift + liftStep, -1200, 1200);
 }
 
 function updatePointer(event) {
@@ -504,6 +504,39 @@ function projectPointerToCursor() {
   };
   state.cursor = next;
   return true;
+}
+
+function positionAdjacentToHitFace(intersection) {
+  const position = intersection.object.userData.position;
+  if (!position || !intersection.face) return null;
+  const normal = intersection.face.normal.clone().transformDirection(intersection.object.matrixWorld);
+  const axis = dominantAxis(normal);
+  const next = { ...position };
+  next[axis.name] += axis.sign;
+  if (!isInsideWorkspace(next)) return null;
+  return next;
+}
+
+function dominantAxis(vector) {
+  const axes = [
+    { name: "x", value: vector.x },
+    { name: "y", value: vector.y },
+    { name: "z", value: vector.z }
+  ];
+  const axis = axes.reduce((best, candidate) => Math.abs(candidate.value) > Math.abs(best.value) ? candidate : best);
+  return { name: axis.name, sign: axis.value >= 0 ? 1 : -1 };
+}
+
+function selectBlock(position) {
+  const block = getBlock(state.project, position);
+  if (!block) return;
+  state.selected = { ...position };
+  state.selectedMaterial = block.material;
+  state.selectedShape = block.shape;
+  state.cursor = { ...position };
+  updateCursorMesh();
+  updateUi();
+  renderProject();
 }
 
 function commitProject(project) {
@@ -721,6 +754,15 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
+function isInsideWorkspace(position) {
+  return position.x >= 0
+    && position.y >= 0
+    && position.z >= 0
+    && position.x < state.project.workspaceCells.x
+    && position.y < state.project.workspaceCells.y
+    && position.z < state.project.workspaceCells.z;
+}
+
 function seededRandom(seedText) {
   let seed = 0;
   for (const char of String(seedText)) seed = (seed * 31 + char.charCodeAt(0)) >>> 0;
@@ -734,16 +776,5 @@ function line(context, x1, y1, x2, y2) {
   context.beginPath();
   context.moveTo(x1, y1);
   context.lineTo(x2, y2);
-  context.stroke();
-}
-
-function curve(context, ...points) {
-  context.beginPath();
-  context.moveTo(points[0], points[1]);
-  if (points.length === 6) {
-    context.quadraticCurveTo(points[2], points[3], points[4], points[5]);
-  } else {
-    context.bezierCurveTo(points[2], points[3], points[4], points[5], points[6], points[7]);
-  }
   context.stroke();
 }

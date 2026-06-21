@@ -32,6 +32,8 @@ try {
   const viewport = await page.locator("#viewport").boundingBox();
   await page.mouse.click(viewport.x + viewport.width / 2, viewport.y + viewport.height / 2);
   await page.waitForTimeout(500);
+  await page.mouse.click(viewport.x + viewport.width / 2, viewport.y + viewport.height / 2 + 20);
+  await page.waitForTimeout(500);
 
   const metrics = await page.evaluate(() => {
     const canvas = document.querySelector("#viewport");
@@ -80,13 +82,13 @@ try {
   if (!metrics.hasWebgl) {
     throw new Error("Packaged app canvas did not expose a WebGL context.");
   }
-  if (metrics.materialButtons < 4) {
+  if (metrics.materialButtons !== 2) {
     throw new Error(`Material controls did not render: ${JSON.stringify(metrics)}`);
   }
   if (metrics.nonZeroPixels < 200 || metrics.colorSum === 0) {
     throw new Error(`Packaged canvas appears blank: ${JSON.stringify(metrics)}`);
   }
-  if (!metrics.blockCountText.includes("1 / 10000")) {
+  if (!metrics.blockCountText.includes("2 / 10000")) {
     throw new Error(`Packaged mouse placement did not add a block: ${metrics.blockCountText}`);
   }
   console.log(JSON.stringify(metrics, null, 2));

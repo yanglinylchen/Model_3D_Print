@@ -15,7 +15,7 @@ import {
 
 test("normalizes project save/open round trip", () => {
   const project = createProject({ name: "Round Trip" });
-  const placed = setBlock(project, makeBlock({ x: 1, y: 2, z: 3, material: "wood", textureSeed: "fixed" }));
+  const placed = setBlock(project, makeBlock({ x: 1, y: 2, z: 3, material: "plain", textureSeed: "fixed" }));
   assert.equal(placed.ok, true);
 
   const parsed = normalizeProject(JSON.parse(JSON.stringify(placed.project)));
@@ -76,10 +76,10 @@ test("deleting a support block is blocked when it would leave a roof block unsup
 
 test("copy paste preserves texture seed", () => {
   const project = createProject();
-  const copied = makeBlock({ x: 0, y: 0, z: 0, material: "wool", textureSeed: "exact-wool" });
+  const copied = makeBlock({ x: 0, y: 0, z: 0, material: "plain", textureSeed: "exact-plain" });
   const result = pasteBlock(project, copied, { x: 3, y: 2, z: 1 });
   assert.equal(result.ok, true);
-  assert.equal(result.block.textureSeed, "exact-wool");
+  assert.equal(result.block.textureSeed, "exact-plain");
 });
 
 test("undo history retains only 50 steps", () => {

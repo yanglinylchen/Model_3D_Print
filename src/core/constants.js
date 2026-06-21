@@ -13,23 +13,11 @@ export const MATERIALS = Object.freeze({
     color: "#b84b3f",
     reliefDepthMm: 2.4
   },
-  wood: {
-    id: "wood",
-    label: "木材",
-    color: "#b97835",
-    reliefDepthMm: 1.6
-  },
-  stone_slab: {
-    id: "stone_slab",
-    label: "石板",
-    color: "#9ba3a3",
-    reliefDepthMm: 2.4
-  },
-  wool: {
-    id: "wool",
-    label: "羊毛",
-    color: "#eee9df",
-    reliefDepthMm: 1.2
+  plain: {
+    id: "plain",
+    label: "無材質",
+    color: "#d8dad6",
+    reliefDepthMm: 0.6
   }
 });
 
@@ -54,9 +42,7 @@ export const SHAPES = Object.freeze({
 });
 
 export const PRINT_DEFAULTS = Object.freeze({
-  roundedEdgeRadiusMm: 1.5,
   seamRecessDepthMm: 1.0,
   minFeatureMm: 0.5,
   maxReliefMm: 10
 });
-
