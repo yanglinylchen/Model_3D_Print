@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Model 3D Print</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="toolbar">
+        <div class="brand">Model 3D Print</div>
+        <button id="newProject" title="新增專案">新增</button>
+        <button id="openProject" title="開啟 .m3dp">開啟</button>
+        <button id="saveProject" title="儲存 .m3dp">儲存</button>
+        <span class="divider"></span>
+        <button id="undo" class="icon-button" title="復原">↶</button>
+        <button id="redo" class="icon-button" title="重做">↷</button>
+        <button id="copyBlock" title="複製選取方塊">複製</button>
+        <button id="pasteBlock" title="貼上到游標位置">貼上</button>
+        <button id="eraseBlock" class="danger" title="刪除選取方塊">清除</button>
+        <button id="rotateBlock" title="旋轉選取或待放置方塊">旋轉</button>
+        <button id="alignMaterial" title="整理相同材質方向">整理材質方向</button>
+        <button id="exportStl" class="primary" title="輸出 STL">輸出 STL</button>
+      </header>
+
+      <aside class="left-panel">
+        <section>
+          <h2>材質</h2>
+          <div id="materialList" class="swatch-grid"></div>
+        </section>
+        <section>
+          <h2>形狀</h2>
+          <div id="shapeList" class="shape-list"></div>
+        </section>
+        <section>
+          <h2>完成範例</h2>
+          <div id="exampleList" class="example-list"></div>
+        </section>
+      </aside>
+
+      <main class="viewport-shell">
+        <canvas id="viewport"></canvas>
+        <div class="camera-pad" aria-label="視角控制">
+          <button id="cameraLeft" title="視角左轉">↺</button>
+          <button id="cameraRight" title="視角右轉">↻</button>
+        </div>
+      </main>
+
+      <aside class="right-panel">
+        <section>
+          <h2>選取方塊</h2>
+          <p id="selectionInfo">尚未選取</p>
+          <label>
+            改材質
+            <select id="selectedMaterial"></select>
+          </label>
+        </section>
+        <section>
+          <h2>工作空間</h2>
+          <div class="dimension-row">
+            <label>X <input id="workspaceX" type="number" min="1" max="200" /></label>
+            <label>Y <input id="workspaceY" type="number" min="1" max="200" /></label>
+            <label>Z <input id="workspaceZ" type="number" min="1" max="200" /></label>
+          </div>
+          <button id="applyWorkspace">套用尺寸</button>
+          <p id="blockCount"></p>
+        </section>
+        <section>
+          <h2>自動儲存</h2>
+          <p id="autosaveState">尚未自動儲存</p>
+        </section>
+        <section>
+          <h2>STL 狀態</h2>
+          <div id="exportState" class="export-state">尚未輸出</div>
+        </section>
+      </aside>
+
+      <footer class="statusbar">
+        <span id="cursorState"></span>
+        <span id="modeState"></span>
+        <span id="warningState"></span>
+      </footer>
+
+      <dialog id="recoverDialog">
+        <h2>復原自動儲存？</h2>
+        <p>找到比上次手動儲存更新的自動儲存內容。</p>
+        <form method="dialog">
+          <button value="discard">不要復原</button>
+          <button value="recover" class="primary">復原</button>
+        </form>
+      </dialog>
+    </div>
+    <script type="module" src="./renderer.js"></script>
+  </body>
+</html>
+

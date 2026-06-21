@@ -1,0 +1,261 @@
+:root {
+  color-scheme: light;
+  --bg: #f4f6f3;
+  --panel: #ffffff;
+  --panel-border: #d7dfd8;
+  --text: #243033;
+  --muted: #667275;
+  --accent: #16746d;
+  --accent-strong: #0f5954;
+  --warning: #b77911;
+  --danger: #a83d32;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  min-height: 34px;
+  border: 1px solid #b8c5bd;
+  border-radius: 7px;
+  background: #f7faf8;
+  color: var(--text);
+  cursor: pointer;
+}
+
+button:hover {
+  background: #eef5f1;
+}
+
+button.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #ffffff;
+}
+
+button.primary:hover {
+  background: var(--accent-strong);
+}
+
+button.danger {
+  border-color: #c48b84;
+  background: #fff2f0;
+  color: var(--danger);
+}
+
+#app {
+  display: grid;
+  grid-template-columns: 214px minmax(600px, 1fr) 286px;
+  grid-template-rows: 58px minmax(0, 1fr) 42px;
+  width: 100vw;
+  height: 100vh;
+}
+
+.toolbar {
+  grid-column: 1 / 4;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #243033;
+  color: #ffffff;
+}
+
+.brand {
+  min-width: 170px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.toolbar button {
+  border-color: #465457;
+  background: #344245;
+  color: #f5fbf7;
+}
+
+.toolbar .primary {
+  margin-left: auto;
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.divider {
+  width: 1px;
+  height: 30px;
+  margin: 0 4px;
+  background: #526164;
+}
+
+.icon-button {
+  width: 38px;
+  padding: 0;
+  font-size: 18px;
+}
+
+.left-panel,
+.right-panel {
+  overflow: auto;
+  padding: 18px;
+  background: var(--panel);
+}
+
+.left-panel {
+  border-right: 1px solid var(--panel-border);
+}
+
+.right-panel {
+  border-left: 1px solid var(--panel-border);
+}
+
+section + section {
+  margin-top: 24px;
+}
+
+h2 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.material-button,
+.shape-button,
+.example-button {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  padding: 8px;
+  text-align: center;
+}
+
+.material-button img {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+}
+
+.shape-list,
+.example-list {
+  display: grid;
+  gap: 8px;
+}
+
+.shape-button {
+  grid-template-columns: 36px 1fr;
+  align-items: center;
+  text-align: left;
+}
+
+.shape-button img {
+  width: 36px;
+  height: 36px;
+}
+
+.selected {
+  outline: 3px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.viewport-shell {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  background: #dfe7e1;
+}
+
+#viewport {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.camera-pad {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  display: flex;
+  gap: 12px;
+}
+
+.camera-pad button {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #ffffffd9;
+  font-size: 22px;
+}
+
+.dimension-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.dimension-row input,
+select {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid #bbc8c0;
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+.export-state {
+  min-height: 44px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 10px;
+  background: #f7faf8;
+}
+
+.export-state.ready {
+  border-color: #8dc0a9;
+  background: #e8f4ef;
+}
+
+.export-state.blocked,
+#warningState {
+  color: var(--danger);
+}
+
+.statusbar {
+  grid-column: 1 / 4;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 0 18px;
+  background: #253033;
+  color: #e7efea;
+  font-size: 14px;
+}
+
+dialog {
+  max-width: 420px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 22px;
+}
+
+dialog::backdrop {
+  background: rgba(20, 30, 32, 0.35);
+}
+

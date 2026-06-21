@@ -1,0 +1,49 @@
+{
+  "name": "model-3d-print",
+  "version": "0.1.0",
+  "description": "Taiwan Traditional Chinese voxel modeling app for 3D-printable STL output.",
+  "main": "src/main/main.cjs",
+  "type": "module",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test tests/*.test.js",
+    "build:check": "node --check src/main/main.cjs && node --check src/main/preload.cjs && node --check src/renderer/renderer.js && node --test tests/*.test.js",
+    "visual:smoke": "node scripts/visual_smoke.mjs",
+    "package:mac": "electron-builder --mac zip --publish never"
+  },
+  "keywords": [
+    "3d-printing",
+    "voxel",
+    "stl",
+    "electron",
+    "three"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "three": "^0.181.2"
+  },
+  "devDependencies": {
+    "electron": "^42.4.0",
+    "electron-builder": "^26.0.12",
+    "playwright": "^1.61.0"
+  },
+  "build": {
+    "appId": "tech.togo.model-3d-print",
+    "productName": "Model 3D Print",
+    "asar": true,
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "node_modules/three/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.education",
+      "target": [
+        "zip",
+        "dir"
+      ]
+    }
+  }
+}
