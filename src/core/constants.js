@@ -13,6 +13,12 @@ export const MATERIALS = Object.freeze({
     color: "#b84b3f",
     reliefDepthMm: 2.4
   },
+  rubble_stone: {
+    id: "rubble_stone",
+    label: "亂石",
+    color: "#8d8876",
+    reliefDepthMm: 2.0
+  },
   plain: {
     id: "plain",
     label: "無材質",

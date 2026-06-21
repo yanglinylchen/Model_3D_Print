@@ -41,6 +41,7 @@ try {
       blockCountText: document.querySelector("#blockCount")?.textContent || "",
       selectionInfo: document.querySelector("#selectionInfo")?.textContent || "",
       activeModeText: document.querySelector(".mode-toggle .active")?.textContent || "",
+      materialButtons: document.querySelectorAll("#materialList [data-material]").length,
       shapeButtons: document.querySelectorAll("#shapeList [data-shape]").length
     };
     if (!gl) return sample;
@@ -85,6 +86,9 @@ try {
   }
   if (metrics.selectionInfo.includes("尚未選取")) {
     throw new Error(`Select mode did not select a block: ${JSON.stringify(metrics)}`);
+  }
+  if (metrics.materialButtons !== 3) {
+    throw new Error(`Material controls did not render all materials: ${JSON.stringify(metrics)}`);
   }
   if (metrics.shapeButtons !== 7) {
     throw new Error(`Shape controls did not render all shapes: ${JSON.stringify(metrics)}`);

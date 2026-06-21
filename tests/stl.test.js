@@ -107,6 +107,34 @@ test("brick cube with roof does not export top relief under triangular prism", (
   assert.ok(!vertices.some((vertex) => vertex.z > 50 && vertex.z < 51), "no brick relief should sit between cube top and roof prism");
 });
 
+test("rubble stone cube STL exports irregular side relief without top relief", () => {
+  const project = createProject({ name: "Rubble Stone" });
+  const placed = setBlock(project, makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    material: "rubble_stone",
+    textureSeed: "rubble-test-seed"
+  }));
+  const exported = exportAsciiStl(placed.project);
+  assert.equal(exported.ok, true);
+  assert.ok(exported.triangleCount > 12);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+
+  const vertices = verticesFromStl(exported.stl);
+  assert.equal(Math.max(...vertices.map((vertex) => vertex.z)), 50, "rubble relief should not appear on the top face");
+  assert.ok(
+    Math.min(...vertices.map((vertex) => vertex.x)) < 0
+      || Math.max(...vertices.map((vertex) => vertex.x)) > 50
+      || Math.min(...vertices.map((vertex) => vertex.y)) < 0
+      || Math.max(...vertices.map((vertex) => vertex.y)) > 50,
+    "rubble side stones should protrude from exposed vertical faces"
+  );
+
+  const exportedAgain = exportAsciiStl(placed.project);
+  assert.equal(exported.stl, exportedAgain.stl, "rubble pattern should stay fixed after placement");
+});
+
 test("cube next to triangular prism uses weld overlap instead of edge-only contact", () => {
   let project = createProject({ name: "Side Roof", workspaceCells: { x: 4, y: 4, z: 4 } });
   project = setBlock(project, makeBlock({ x: 0, y: 0, z: 1, material: "brick" })).project;
@@ -361,8 +389,8 @@ test("rotated fence panel STL moves the 10mm thickness to another side", () => {
   assert.equal(Math.max(...vertices.map((vertex) => vertex.z)), 50);
 });
 
-test("available materials are brick and plain only", () => {
-  for (const material of ["brick", "plain"]) {
+test("available materials export printable geometry", () => {
+  for (const material of ["brick", "rubble_stone", "plain"]) {
     const project = createProject({ name: `${material} Relief` });
     const placed = setBlock(project, makeBlock({
       x: 0,

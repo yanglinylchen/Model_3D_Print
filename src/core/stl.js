@@ -5,6 +5,9 @@ const BRICK_RELIEF_RAISE_MM = 1;
 const BRICK_RELIEF_EMBED_MM = 0.08;
 const BRICK_MORTAR_GAP_MM = 1.2;
 const BRICK_ROWS = 5;
+const RUBBLE_STONE_RAISE_MM = 1.2;
+const RUBBLE_STONE_EMBED_MM = 0.08;
+const RUBBLE_STONE_JOINT_GAP_MM = 1.5;
 const WINDOW_THICKNESS_MM = 10;
 const WINDOW_BAR_MM = 8;
 const FENCE_THICKNESS_MM = 10;
@@ -36,24 +39,27 @@ export function exportAsciiStl(project, name = project.name || "model_3d_print")
     repairNotes: [
       "已合併可安全處理的幾何資料",
       "已使用列印安全模式輸出閉合外殼",
-      "已將磚紋浮雕限制在外露側面，避免頂面干擾屋頂三角柱"
+      "已將磚紋與亂石浮雕限制在外露側面，避免頂面干擾屋頂三角柱"
     ]
   };
 }
 
 export function reliefTrianglesForBlock(project, block) {
-  if (!project || block.material !== "brick") return [];
+  if (!project || !["brick", "rubble_stone"].includes(block.material)) return [];
   const x = block.x * CELL_SIZE_MM;
   const y = block.y * CELL_SIZE_MM;
   const z = block.z * CELL_SIZE_MM;
   if (block.shape === "stair_step") {
-    return stairReliefTriangles(project, block, x, y, z);
+    return block.material === "brick" ? stairReliefTriangles(project, block, x, y, z) : [];
   }
   if (block.shape !== "cube") return [];
   const triangles = [];
   for (const face of ["south", "east", "north", "west"]) {
     if (neighborAt(project, block, face)) continue;
-    for (const [min, max] of brickSideReliefBoxes(x, y, z, CELL_SIZE_MM, face, block.textureSeed || "")) {
+    const boxes = block.material === "rubble_stone"
+      ? rubbleStoneSideReliefBoxes(x, y, z, CELL_SIZE_MM, face, block.textureSeed || "")
+      : brickSideReliefBoxes(x, y, z, CELL_SIZE_MM, face, block.textureSeed || "");
+    for (const [min, max] of boxes) {
       triangles.push(...cuboidTriangles(min, max));
     }
   }
@@ -162,6 +168,63 @@ function brickSideReliefBoxes(x, y, z, size, face, seed) {
 function reliefBoxForFace(x, y, z, face, u0, u1, v0, v1) {
   const raise = BRICK_RELIEF_RAISE_MM;
   const embed = BRICK_RELIEF_EMBED_MM;
+  return reliefBoxForFaceWithDepth(x, y, z, face, u0, u1, v0, v1, raise, embed);
+}
+
+function rubbleStoneSideReliefBoxes(x, y, z, size, face, seed) {
+  const boxes = [];
+  const gap = RUBBLE_STONE_JOINT_GAP_MM;
+  const rows = irregularBreaks(size, `${seed}:rubble:${face}:row`, 9, 16);
+  for (let row = 0; row < rows.length - 1; row += 1) {
+    const rowTop = rows[row];
+    const rowBottom = rows[row + 1];
+    const rowSeed = `${seed}:rubble:${face}:row:${row}`;
+    const shifted = seededUnit(`${rowSeed}:shift`) > 0.52;
+    const stones = irregularBreaks(size, `${rowSeed}:stone`, 11, 23);
+    const startOffset = shifted ? -((stones[1] - stones[0]) * 0.45) : 0;
+    for (let index = 0; index < stones.length - 1; index += 1) {
+      const raw0 = stones[index] + startOffset;
+      const raw1 = stones[index + 1] + startOffset;
+      const u0 = Math.max(0, raw0) + gap / 2;
+      const u1 = Math.min(size, raw1) - gap / 2;
+      const v0 = rowTop + gap / 2;
+      const v1 = rowBottom - gap / 2;
+      if (u1 - u0 < 5 || v1 - v0 < 5) continue;
+      boxes.push(reliefBoxForFaceWithDepth(
+        x,
+        y,
+        z,
+        face,
+        u0,
+        u1,
+        v0,
+        v1,
+        RUBBLE_STONE_RAISE_MM,
+        RUBBLE_STONE_EMBED_MM
+      ));
+    }
+  }
+  return boxes;
+}
+
+function irregularBreaks(size, seed, minStep, maxStep) {
+  const breaks = [0];
+  let cursor = 0;
+  let index = 0;
+  while (cursor < size - minStep) {
+    const step = minStep + seededUnit(`${seed}:${index}`) * (maxStep - minStep);
+    cursor = Math.min(size, cursor + step);
+    if (size - cursor < minStep * 0.72) {
+      cursor = size;
+    }
+    breaks.push(Number(cursor.toFixed(3)));
+    index += 1;
+  }
+  if (breaks.at(-1) !== size) breaks.push(size);
+  return breaks;
+}
+
+function reliefBoxForFaceWithDepth(x, y, z, face, u0, u1, v0, v1, raise, embed) {
   if (face === "east") {
     return [[x + CELL_SIZE_MM - embed, y + u0, z + v0], [x + CELL_SIZE_MM + raise, y + u1, z + v1]];
   }

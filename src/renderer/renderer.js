@@ -604,6 +604,36 @@ function createMaterialTexture(material, seed) {
     context.strokeStyle = "#ef9c91";
     context.lineWidth = 3;
     for (let i = 0; i < 8; i += 1) line(context, 12 + rng() * 90, 16 + rng() * 92, 28 + rng() * 90, 16 + rng() * 92);
+  } else if (material === "rubble_stone") {
+    context.fillStyle = "#575345";
+    context.fillRect(0, 0, 128, 128);
+    const rows = [0, 26, 52, 82, 108, 128];
+    for (let row = 0; row < rows.length - 1; row += 1) {
+      let x = row % 2 === 0 ? -18 : 0;
+      while (x < 128) {
+        const width = 22 + rng() * 36;
+        const y0 = rows[row] + 3 + rng() * 4;
+        const y1 = rows[row + 1] - 3 - rng() * 4;
+        const x0 = Math.max(0, x + 3 + rng() * 4);
+        const x1 = Math.min(128, x + width - 3 - rng() * 4);
+        if (x1 - x0 > 12 && y1 - y0 > 10) {
+          const shade = 132 + Math.floor(rng() * 34);
+          context.fillStyle = `rgb(${shade}, ${shade - 6}, ${shade - 24})`;
+          context.beginPath();
+          context.roundRect(x0, y0, x1 - x0, y1 - y0, 5 + rng() * 7);
+          context.fill();
+          context.strokeStyle = "rgba(235, 229, 198, 0.3)";
+          context.lineWidth = 2;
+          context.stroke();
+        }
+        x += width;
+      }
+    }
+    context.strokeStyle = "rgba(44, 39, 31, 0.45)";
+    context.lineWidth = 2;
+    for (let i = 0; i < 18; i += 1) {
+      line(context, rng() * 128, rng() * 128, rng() * 128, rng() * 128);
+    }
   } else {
     context.strokeStyle = "#aeb4ae";
     context.lineWidth = 4;
