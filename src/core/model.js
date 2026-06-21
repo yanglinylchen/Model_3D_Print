@@ -57,6 +57,10 @@ export function validateProject(project) {
     }
     occupied.add(blockKey(block));
   }
+  const unsupported = findUnsupportedRoofBlocks(project);
+  if (unsupported.length > 0) {
+    throw new Error(`有 ${unsupported.length} 個方塊缺少斜面上方支撐。`);
+  }
   return true;
 }
 
@@ -118,6 +122,15 @@ export function removeBlock(project, position) {
   const key = blockKey(position);
   const before = next.blocks.length;
   next.blocks = next.blocks.filter((block) => blockKey(block) !== key);
+  const unsupported = findUnsupportedRoofBlocks(next);
+  if (unsupported.length > 0) {
+    return {
+      ok: false,
+      reason: "清除後會讓斜面上方的方塊失去支撐，因此已禁止清除。",
+      project,
+      unsupported
+    };
+  }
   return { ok: before !== next.blocks.length, project: next };
 }
 
@@ -221,6 +234,13 @@ export function hasUpperBlockSupport(project, block) {
   return supportPositions.some((position) => getBlock(project, position));
 }
 
+export function findUnsupportedRoofBlocks(project) {
+  return project.blocks.filter((block) => {
+    const below = getBlock(project, { x: block.x, y: block.y, z: block.z - 1 });
+    return below && SHAPES[below.shape]?.restrictedTop && !hasUpperBlockSupport(project, block);
+  });
+}
+
 export function getThirtyDegreeHeightMm() {
   return SHAPES.prism_30.maxHeightMm;
 }
@@ -264,4 +284,3 @@ function isInsideWorkspace(block, workspaceCells) {
 function normalizeRotation(rotation) {
   return ((rotation % 360) + 360) % 360;
 }
-

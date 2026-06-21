@@ -8,6 +8,7 @@ import {
   makeBlock,
   normalizeProject,
   pasteBlock,
+  removeBlock,
   resizeWorkspace,
   setBlock
 } from "../src/core/model.js";
@@ -62,6 +63,17 @@ test("roof support rule blocks direct placement above 30 and 45 degree prisms", 
   }
 });
 
+test("deleting a support block is blocked when it would leave a roof block unsupported", () => {
+  let project = createProject();
+  project = setBlock(project, makeBlock({ x: 1, y: 1, z: 0, shape: "prism_30" })).project;
+  project = setBlock(project, makeBlock({ x: 2, y: 1, z: 1, textureSeed: "support" })).project;
+  project = setBlock(project, makeBlock({ x: 1, y: 1, z: 1, textureSeed: "upper" })).project;
+
+  const removed = removeBlock(project, { x: 2, y: 1, z: 1 });
+  assert.equal(removed.ok, false);
+  assert.match(removed.reason, /失去支撐/);
+});
+
 test("copy paste preserves texture seed", () => {
   const project = createProject();
   const copied = makeBlock({ x: 0, y: 0, z: 0, material: "wool", textureSeed: "exact-wool" });
@@ -79,4 +91,3 @@ test("undo history retains only 50 steps", () => {
   }
   assert.equal(history.undoStack.length, 50);
 });
-

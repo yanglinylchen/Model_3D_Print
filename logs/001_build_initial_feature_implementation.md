@@ -39,6 +39,7 @@ Implemented the first runnable Model 3D Print desktop app slice using Electron a
 - One-minute local autosave and restart recovery prompt.
 - Finished example loading.
 - Roof support placement rule for 30-degree and 45-degree prism blocks.
+- Roof support invariant also blocks deleting a side/top support when that deletion would leave a block unsupported above a prism.
 - ASCII STL export foundation with closed-volume triangle generation, conservative repair scaffold, and validation.
 - Visual smoke script using Playwright Electron mode.
 
@@ -52,7 +53,7 @@ Implemented the first runnable Model 3D Print desktop app slice using Electron a
 
 ## Check Results
 
-- Unit tests: pass, 9 tests.
+- Unit tests: pass, 10 tests.
 - Build/syntax check: pass.
 - Visual smoke: pass.
 - Visual smoke screenshot: `reports/visual_smoke.png`.
