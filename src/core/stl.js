@@ -188,6 +188,17 @@ function cuboidTriangles(min, max) {
   ]);
 }
 
+function cuboidTrianglesWithoutTop(min, max) {
+  const vertices = cubeVertices(min, max);
+  return facesToTriangles([
+    [vertices.p000, vertices.p100, vertices.p110, vertices.p010],
+    [vertices.p000, vertices.p001, vertices.p101, vertices.p100],
+    [vertices.p100, vertices.p101, vertices.p111, vertices.p110],
+    [vertices.p110, vertices.p111, vertices.p011, vertices.p010],
+    [vertices.p010, vertices.p011, vertices.p001, vertices.p000]
+  ]);
+}
+
 function brickSideReliefBoxes(x, y, z, size, face, seed) {
   const boxes = [];
   const rowHeight = size / BRICK_ROWS;
@@ -732,27 +743,40 @@ function gridPanelTriangles(x, y, z, xSpans, zSpans, occupied, thickness) {
 }
 
 function archwayTriangles(x, y, z) {
-  const xSpans = [0, 8, 16, 24, 26, 34, 42, 50];
-  const zSpans = [0, 8, 42, 54, 64, 76, 88, 100];
-  const occupied = [];
-  for (let xi = 0; xi < xSpans.length - 1; xi += 1) {
-    occupied[xi] = [];
-    for (let zi = 0; zi < zSpans.length - 1; zi += 1) {
-      const x0 = xSpans[xi];
-      const x1 = xSpans[xi + 1];
-      const z0 = zSpans[zi];
-      const z1 = zSpans[zi + 1];
-      const sidePost = (x0 < 8 || x1 > 42) && z0 < 64;
-      const lintel = z0 >= 88;
-      const cx = (x0 + x1) / 2;
-      const cz = (z0 + z1) / 2;
-      const dx = Math.abs(cx - 25);
-      const dz = cz - 62;
-      const archRing = cz >= 54 && dz >= 0 && Math.hypot(dx, dz) >= 18 && Math.hypot(dx, dz) <= 30;
-      occupied[xi][zi] = sidePost || lintel || archRing;
-    }
+  const triangles = [];
+  triangles.push(...cuboidTrianglesWithoutTop([x, y, z], [x + 10, y + DOOR_THICKNESS_MM, z + 75]));
+  triangles.push(...cuboidTrianglesWithoutTop([x + 40, y, z], [x + 50, y + DOOR_THICKNESS_MM, z + 75]));
+  triangles.push(...archRingTriangles(x, y, z, 25, 75, 15, 25, DOOR_THICKNESS_MM, 18));
+  return triangles;
+}
+
+function archRingTriangles(x, y, z, centerX, centerZ, innerRadius, outerRadius, thickness, segments) {
+  const triangles = [];
+  const y0 = y;
+  const y1 = y + thickness;
+  for (let index = 0; index < segments; index += 1) {
+    const a0 = Math.PI - (index * Math.PI) / segments;
+    const a1 = Math.PI - ((index + 1) * Math.PI) / segments;
+    const outer0 = [x + centerX + Math.cos(a0) * outerRadius, z + centerZ + Math.sin(a0) * outerRadius];
+    const outer1 = [x + centerX + Math.cos(a1) * outerRadius, z + centerZ + Math.sin(a1) * outerRadius];
+    const inner0 = [x + centerX + Math.cos(a0) * innerRadius, z + centerZ + Math.sin(a0) * innerRadius];
+    const inner1 = [x + centerX + Math.cos(a1) * innerRadius, z + centerZ + Math.sin(a1) * innerRadius];
+    const o0f = [outer0[0], y0, outer0[1]];
+    const o1f = [outer1[0], y0, outer1[1]];
+    const i1f = [inner1[0], y0, inner1[1]];
+    const i0f = [inner0[0], y0, inner0[1]];
+    const o0b = [outer0[0], y1, outer0[1]];
+    const o1b = [outer1[0], y1, outer1[1]];
+    const i1b = [inner1[0], y1, inner1[1]];
+    const i0b = [inner0[0], y1, inner0[1]];
+    triangles.push(...facesToTriangles([
+      [o0f, o1f, i1f, i0f],
+      [o0b, i0b, i1b, o1b],
+      [o0f, o0b, o1b, o1f],
+      [i0f, i1f, i1b, i0b]
+    ]));
   }
-  return gridPanelTriangles(x, y, z, xSpans, zSpans, occupied, DOOR_THICKNESS_MM);
+  return triangles;
 }
 
 function roofCornerTriangles(x, y, z) {
