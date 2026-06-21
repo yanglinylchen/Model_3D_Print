@@ -21,6 +21,10 @@ try {
   await page.waitForTimeout(500);
   await page.mouse.click(viewport.x + viewport.width / 2, viewport.y + viewport.height / 2 + 20);
   await page.waitForTimeout(500);
+  await page.locator("#selectMode").click();
+  await page.waitForTimeout(200);
+  await page.mouse.click(viewport.x + viewport.width / 2, viewport.y + viewport.height / 2);
+  await page.waitForTimeout(500);
   const metrics = await page.evaluate(() => {
     const canvas = document.querySelector("#viewport");
     const rect = canvas.getBoundingClientRect();
@@ -34,7 +38,9 @@ try {
       nonZeroPixels: 0,
       colorSum: 0,
       toolbarText: document.querySelector(".brand")?.textContent || "",
-      blockCountText: document.querySelector("#blockCount")?.textContent || ""
+      blockCountText: document.querySelector("#blockCount")?.textContent || "",
+      selectionInfo: document.querySelector("#selectionInfo")?.textContent || "",
+      activeModeText: document.querySelector(".mode-toggle .active")?.textContent || ""
     };
     if (!gl) return sample;
     const pixels = new Uint8Array(4 * 80 * 80);
@@ -72,6 +78,12 @@ try {
   }
   if (!metrics.blockCountText.includes("2 / 10000")) {
     throw new Error(`Mouse placement did not add a block: ${metrics.blockCountText}`);
+  }
+  if (metrics.activeModeText !== "選取") {
+    throw new Error(`Select mode did not activate: ${JSON.stringify(metrics)}`);
+  }
+  if (metrics.selectionInfo.includes("尚未選取")) {
+    throw new Error(`Select mode did not select a block: ${JSON.stringify(metrics)}`);
   }
   console.log(JSON.stringify(metrics, null, 2));
 } finally {

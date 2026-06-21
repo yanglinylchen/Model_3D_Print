@@ -107,6 +107,29 @@ button.danger {
   font-size: 18px;
 }
 
+.mode-toggle {
+  display: flex;
+  overflow: hidden;
+  border: 1px solid #465457;
+  border-radius: 7px;
+}
+
+.mode-toggle button {
+  min-height: 32px;
+  border: 0;
+  border-radius: 0;
+  background: #344245;
+}
+
+.mode-toggle button + button {
+  border-left: 1px solid #465457;
+}
+
+.mode-toggle button.active {
+  background: #dcebe5;
+  color: #17332f;
+}
+
 .left-panel,
 .right-panel {
   overflow: auto;
@@ -258,4 +281,3 @@ dialog {
 dialog::backdrop {
   background: rgba(20, 30, 32, 0.35);
 }
-

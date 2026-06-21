@@ -42,6 +42,7 @@ const state = {
   filePath: null,
   selectedMaterial: "brick",
   selectedShape: "cube",
+  mouseMode: "place",
   selected: null,
   copied: null,
   cursor: { x: 0, y: 0, z: 0 },
@@ -72,6 +73,8 @@ const elements = {
   cursorState: document.getElementById("cursorState"),
   modeState: document.getElementById("modeState"),
   warningState: document.getElementById("warningState"),
+  placeMode: document.getElementById("placeMode"),
+  selectMode: document.getElementById("selectMode"),
   recoverDialog: document.getElementById("recoverDialog")
 };
 
@@ -120,6 +123,8 @@ function bindControls() {
   document.getElementById("saveProject").addEventListener("click", () => saveProject(false));
   document.getElementById("undo").addEventListener("click", undo);
   document.getElementById("redo").addEventListener("click", redo);
+  elements.placeMode.addEventListener("click", () => setMouseMode("place"));
+  elements.selectMode.addEventListener("click", () => setMouseMode("select"));
   document.getElementById("copyBlock").addEventListener("click", copySelected);
   document.getElementById("pasteBlock").addEventListener("click", pasteCopied);
   document.getElementById("eraseBlock").addEventListener("click", eraseSelected);
@@ -454,8 +459,12 @@ function handleViewportClick(event) {
   if (intersections.length > 0) {
     const hit = intersections[0];
     const hitPosition = hit.object.userData.position;
+    if (state.mouseMode === "select" || event.shiftKey) {
+      if (hitPosition) selectBlock(hitPosition);
+      return;
+    }
     const next = positionAdjacentToHitFace(hit);
-    if (!event.shiftKey && next && !getBlock(state.project, next)) {
+    if (next && !getBlock(state.project, next)) {
       state.cursor = next;
       updateCursorMesh();
       placeOrSelectAtCursor();
@@ -506,6 +515,7 @@ function handleKeydown(event) {
       return openProject();
     }
   }
+  if (isTextInputTarget(event.target)) return;
   if (["w", "a", "s", "d", "q", "e"].includes(key)) {
     state.pressedKeys.add(key);
   }
@@ -515,6 +525,7 @@ function handleKeydown(event) {
   if (event.key === "ArrowDown") moveCursor(0, -1, 0);
   if (event.key === "PageUp") moveCursor(0, 0, 1);
   if (event.key === "PageDown") moveCursor(0, 0, -1);
+  if (key === "r") rotateSelectedOrPending();
   if (event.key === "Delete" || event.key === "Backspace") eraseSelected();
 }
 
@@ -537,6 +548,11 @@ function moveCursor(dx, dy, dz) {
 
 function rotateCamera(delta) {
   state.cameraAngle += delta;
+}
+
+function setMouseMode(mode) {
+  state.mouseMode = mode;
+  updateUi();
 }
 
 function updateHeldCameraControls() {
@@ -793,6 +809,8 @@ function updateUi() {
   document.querySelectorAll("[data-shape]").forEach((button) => {
     button.classList.toggle("selected", button.dataset.shape === state.selectedShape);
   });
+  elements.placeMode.classList.toggle("active", state.mouseMode === "place");
+  elements.selectMode.classList.toggle("active", state.mouseMode === "select");
   const selectedBlock = state.selected ? getBlock(state.project, state.selected) : null;
   elements.selectionInfo.textContent = selectedBlock
     ? `${MATERIALS[selectedBlock.material].label} / ${SHAPES[selectedBlock.shape].label} / ${selectedBlock.x},${selectedBlock.y},${selectedBlock.z}`
@@ -800,7 +818,7 @@ function updateUi() {
   elements.selectedMaterial.value = selectedBlock?.material || state.selectedMaterial;
   elements.blockCount.textContent = `方塊 ${state.project.blocks.length} / ${MAX_BLOCKS}`;
   elements.cursorState.textContent = `游標：${state.cursor.x}, ${state.cursor.y}, ${state.cursor.z}`;
-  elements.modeState.textContent = `材質：${MATERIALS[state.selectedMaterial].label}　形狀：${SHAPES[state.selectedShape].label}　旋轉：${state.pendingRotation}°`;
+  elements.modeState.textContent = `滑鼠：${state.mouseMode === "select" ? "選取" : "放置"}　材質：${MATERIALS[state.selectedMaterial].label}　形狀：${SHAPES[state.selectedShape].label}　旋轉：${state.pendingRotation}°`;
   elements.warningState.textContent = state.warning;
   elements.autosaveState.textContent = state.lastAutosaveAt
     ? `上次自動儲存：${new Date(state.lastAutosaveAt).toLocaleTimeString("zh-TW")}`
@@ -814,6 +832,13 @@ function setWarning(message) {
 
 function samePosition(a, b) {
   return a && b && a.x === b.x && a.y === b.y && a.z === b.z;
+}
+
+function isTextInputTarget(target) {
+  return target instanceof HTMLInputElement
+    || target instanceof HTMLSelectElement
+    || target instanceof HTMLTextAreaElement
+    || target?.isContentEditable;
 }
 
 function clamp(value, min, max) {
