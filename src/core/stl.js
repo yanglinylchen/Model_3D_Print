@@ -28,6 +28,7 @@ export function exportAsciiStl(project, name = project.name || "model_3d_print")
 }
 
 export function reliefTrianglesForBlock(project, block) {
+  if (block.shape !== "cube") return [];
   const material = MATERIALS[block.material] || MATERIALS.brick;
   const depth = Math.min(material.reliefDepthMm, PRINT_DEFAULTS.maxReliefMm);
   const x = block.x * CELL_SIZE_MM;
@@ -228,15 +229,14 @@ function hashString(input) {
 
 function triangularPrismTriangles(x, y, z, height, block) {
   const size = CELL_SIZE_MM;
-  const relief = reliefOffset(block);
-  const h = Math.min(height + relief, size);
+  const h = Math.min(height, size);
   const a = [x, y, z];
   const b = [x + size, y, z];
   const c = [x + size, y, z + h];
   const d = [x, y + size, z];
   const e = [x + size, y + size, z];
   const f = [x + size, y + size, z + h];
-  return [
+  return rotateTrianglesZ([
     [a, b, c],
     [d, f, e],
     ...facesToTriangles([
@@ -244,7 +244,7 @@ function triangularPrismTriangles(x, y, z, height, block) {
       [b, e, f, c],
       [c, f, d, a]
     ])
-  ];
+  ], [x + size / 2, y + size / 2], block.rotation || 0);
 }
 
 function facesToTriangles(faces) {
@@ -256,9 +256,21 @@ function facesToTriangles(faces) {
   return triangles;
 }
 
-function reliefOffset(block) {
-  const material = MATERIALS[block.material] || MATERIALS.brick;
-  return Math.min(material.reliefDepthMm, PRINT_DEFAULTS.maxReliefMm);
+function rotateTrianglesZ(triangles, center, degrees) {
+  const normalized = ((degrees % 360) + 360) % 360;
+  if (normalized === 0) return triangles;
+  const radians = (normalized * Math.PI) / 180;
+  const sin = Math.sin(radians);
+  const cos = Math.cos(radians);
+  return triangles.map((triangle) => triangle.map((point) => {
+    const dx = point[0] - center[0];
+    const dy = point[1] - center[1];
+    return [
+      center[0] + dx * cos - dy * sin,
+      center[1] + dx * sin + dy * cos,
+      point[2]
+    ];
+  }));
 }
 
 function stringifyAsciiStl(name, triangles) {

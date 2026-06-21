@@ -58,6 +58,53 @@ test("brick STL export generates dense procedural relief geometry", () => {
   assert.ok(exported.stl.includes("vertex 0.5"), "expected 1mm seam recess brick relief vertices");
 });
 
+test("brick triangular prisms export clean prism geometry without cube relief", () => {
+  for (const shape of ["prism_30", "prism_45"]) {
+    const project = createProject({ name: `${shape} STL` });
+    const placed = setBlock(project, makeBlock({
+      x: 0,
+      y: 0,
+      z: 0,
+      shape,
+      material: "brick",
+      textureSeed: `${shape}-brick-seed`
+    }));
+    const exported = exportAsciiStl(placed.project);
+    assert.equal(exported.ok, true);
+    assert.equal(exported.triangleCount, 8, `${shape} should not include cube relief boxes`);
+
+    const vertices = [...exported.stl.matchAll(/vertex ([\d.-]+) ([\d.-]+) ([\d.-]+)/g)].map((match) => ({
+      x: Number(match[1]),
+      y: Number(match[2]),
+      z: Number(match[3])
+    }));
+    const maxZ = Math.max(...vertices.map((vertex) => vertex.z));
+    const expectedMaxZ = shape === "prism_30" ? Math.tan(Math.PI / 6) * 50 : 50;
+    assert.equal(Number(maxZ.toFixed(2)), Number(expectedMaxZ.toFixed(2)));
+    assert.ok(!exported.stl.includes("vertex 0.5"), `${shape} should not contain brick relief seam vertices`);
+  }
+});
+
+test("rotated triangular prism STL follows block rotation", () => {
+  const project = createProject({ name: "Rotated Prism" });
+  const placed = setBlock(project, makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    shape: "prism_45",
+    material: "plain",
+    rotation: 90
+  }));
+  const exported = exportAsciiStl(placed.project);
+  assert.equal(exported.ok, true);
+  const vertices = [...exported.stl.matchAll(/vertex ([\d.-]+) ([\d.-]+) ([\d.-]+)/g)].map((match) => ({
+    x: Number(match[1]),
+    y: Number(match[2]),
+    z: Number(match[3])
+  }));
+  assert.ok(vertices.some((vertex) => vertex.x === 0 && vertex.y === 50 && vertex.z === 50));
+});
+
 test("available materials are brick and plain only", () => {
   for (const material of ["brick", "plain"]) {
     const project = createProject({ name: `${material} Relief` });
