@@ -567,6 +567,50 @@ test("new scene object STLs are closed and fit their cells", () => {
   }
 });
 
+test("roof corner on top of a cube does not leave overlapping support faces", () => {
+  let project = createProject({ name: "Supported Roof Corner", workspaceCells: { x: 3, y: 3, z: 3 } });
+  project = setBlock(project, makeBlock({
+    x: 1,
+    y: 1,
+    z: 0,
+    material: "brick",
+    textureSeed: "roof-corner-support"
+  })).project;
+  project = setBlock(project, makeBlock({
+    x: 1,
+    y: 1,
+    z: 1,
+    shape: "roof_corner",
+    material: "plain"
+  })).project;
+  const exported = exportAsciiStl(project);
+  assert.equal(exported.ok, true);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+});
+
+test("roof corner beside a cube uses a tiny weld instead of exact edge contact", () => {
+  let project = createProject({ name: "Side Roof Corner", workspaceCells: { x: 3, y: 3, z: 3 } });
+  project = setBlock(project, makeBlock({
+    x: 1,
+    y: 1,
+    z: 1,
+    shape: "roof_corner",
+    material: "plain"
+  })).project;
+  project = setBlock(project, makeBlock({
+    x: 0,
+    y: 1,
+    z: 1,
+    material: "brick",
+    textureSeed: "roof-corner-side"
+  })).project;
+  const exported = exportAsciiStl(project);
+  assert.equal(exported.ok, true);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+  const vertices = verticesFromStl(exported.stl);
+  assert.ok(vertices.some((vertex) => vertex.x < 50 && vertex.x > 49.9), "roof corner should slightly overlap side support");
+});
+
 test("available materials export printable geometry", () => {
   for (const material of ["brick", "rubble_stone", "roof_tile", "metal_plate", "grid_tile", "plain"]) {
     const project = createProject({ name: `${material} Relief` });

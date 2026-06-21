@@ -1,4 +1,4 @@
-import { CELL_SIZE_MM } from "./constants.js";
+import { CELL_SIZE_MM, SHAPES } from "./constants.js";
 
 const PRISM_WELD_OVERLAP_MM = 0.08;
 const BRICK_RELIEF_RAISE_MM = 1;
@@ -121,7 +121,7 @@ export function trianglesForBlock(block, project = null) {
     return rotateTrianglesZ(archwayTriangles(x, y, z), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
   }
   if (block.shape === "roof_corner") {
-    return rotateTrianglesZ(roofCornerTriangles(x, y, z), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
+    return rotateTrianglesZ(roofCornerTriangles(x, y, z, block, project), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
   }
   if (block.shape === "chimney") {
     return rotateTrianglesZ(chimneyTriangles(x, y, z), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
@@ -802,24 +802,31 @@ function archwayBottomBoundary(x, z, centerX, springZ, innerRadius, segments) {
   return boundary;
 }
 
-function roofCornerTriangles(x, y, z) {
+function roofCornerTriangles(x, y, z, block, project) {
   const s = CELL_SIZE_MM;
-  const a = [x, y, z];
-  const b = [x + s, y, z];
-  const c = [x, y + s, z];
-  const d = [x + s, y + s, z];
-  const e = [x + s, y, z + s];
-  const f = [x, y + s, z + s];
-  const g = [x + s, y + s, z + s];
-  return facesToTriangles([
-    [a, b, d, c],
+  const hasBottomNeighbor = Boolean(project && block && neighborAt(project, block, "bottom"));
+  const rotation = block?.rotation || 0;
+  const x0 = x - (project && block && neighborAt(project, block, rotatedFace("west", rotation)) ? PRISM_WELD_OVERLAP_MM : 0);
+  const x1 = x + s + (project && block && neighborAt(project, block, rotatedFace("east", rotation)) ? PRISM_WELD_OVERLAP_MM : 0);
+  const y0 = y - (project && block && neighborAt(project, block, rotatedFace("south", rotation)) ? PRISM_WELD_OVERLAP_MM : 0);
+  const y1 = y + s + (project && block && neighborAt(project, block, rotatedFace("north", rotation)) ? PRISM_WELD_OVERLAP_MM : 0);
+  const a = [x0, y0, z];
+  const b = [x1, y0, z];
+  const c = [x0, y1, z];
+  const d = [x1, y1, z];
+  const e = [x1, y0, z + s];
+  const f = [x0, y1, z + s];
+  const g = [x1, y1, z + s];
+  const faces = [
     [a, e, b],
     [a, c, f],
     [b, e, g, d],
     [c, d, g, f],
     [a, g, e],
     [a, f, g]
-  ]);
+  ];
+  if (!hasBottomNeighbor) faces.unshift([a, b, d, c]);
+  return facesToTriangles(faces);
 }
 
 function chimneyTriangles(x, y, z) {
@@ -1023,9 +1030,10 @@ function cubeVertices(min, max) {
 }
 
 function neighborAt(project, block, face) {
+  const heightCells = SHAPES[block.shape]?.heightCells || 1;
   const offsets = {
     bottom: [0, 0, -1],
-    top: [0, 0, 1],
+    top: [0, 0, heightCells],
     east: [1, 0, 0],
     west: [-1, 0, 0],
     north: [0, 1, 0],
@@ -1037,7 +1045,7 @@ function neighborAt(project, block, face) {
 }
 
 function blockOccupies(block, position) {
-  const heightCells = block.shape === "door_panel" ? 2 : 1;
+  const heightCells = SHAPES[block.shape]?.heightCells || 1;
   return block.x === position.x
     && block.y === position.y
     && position.z >= block.z
@@ -1047,7 +1055,15 @@ function blockOccupies(block, position) {
 function shouldEmitCubeFace(project, block, face) {
   const neighbor = neighborAt(project, block, face);
   if (!neighbor) return true;
-  return neighbor.shape !== "cube";
+  return !neighborFullyCoversCubeFace(neighbor, face);
+}
+
+function neighborFullyCoversCubeFace(neighbor, face) {
+  if (neighbor.shape === "cube") return true;
+  if (face === "top") {
+    return neighbor.shape === "roof_corner";
+  }
+  return false;
 }
 
 function hasAnyNeighbor(project, block) {
