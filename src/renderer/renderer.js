@@ -29,6 +29,7 @@ import { exportAsciiStl } from "../core/stl.js";
 const ASSET = "../../assets";
 const WINDOW_THICKNESS_MM = 10;
 const WINDOW_BAR_MM = 8;
+const FENCE_THICKNESS_MM = 10;
 const DOOR_THICKNESS_MM = 10;
 const DOOR_BACK_RECESS_MM = 2;
 const DOOR_RAIL_MM = 7;
@@ -175,6 +176,7 @@ function renderShapeControls() {
     prism_45: "prism_45.svg",
     stair_step: "stair_step.svg",
     window_cross: "window_cross.svg",
+    fence_panel: "fence_panel.svg",
     door_panel: "door_panel.svg"
   };
   elements.shapeList.innerHTML = "";
@@ -239,8 +241,8 @@ function renderProject() {
 
 function createBlockMesh(block) {
   const material = new THREE.MeshStandardMaterial({
-    color: MATERIALS[block.material]?.color || "#b84b3f",
-    map: createMaterialTexture(block.material, block.textureSeed),
+    color: block.shape === "fence_panel" ? "#d8dad6" : (MATERIALS[block.material]?.color || "#b84b3f"),
+    map: block.shape === "fence_panel" ? null : createMaterialTexture(block.material, block.textureSeed),
     roughness: 0.8,
     metalness: 0
   });
@@ -267,6 +269,9 @@ function createGeometry(shape) {
   }
   if (shape === "window_cross") {
     return createWindowCrossGeometry();
+  }
+  if (shape === "fence_panel") {
+    return createFencePanelGeometry();
   }
   if (shape === "door_panel") {
     return createDoorPanelGeometry();
@@ -296,6 +301,61 @@ function createGeometry(shape) {
     return geometry;
   }
   return new THREE.BoxGeometry(CELL_SIZE_MM, CELL_SIZE_MM, CELL_SIZE_MM);
+}
+
+function createFencePanelGeometry() {
+  const xSpans = [0, 7, 18, 22, 28, 32, 43, 50];
+  const zSpans = [0, 8, 15, 28, 35, 50];
+  const occupied = [];
+  for (let xi = 0; xi < xSpans.length - 1; xi += 1) {
+    occupied[xi] = [];
+    for (let zi = 0; zi < zSpans.length - 1; zi += 1) {
+      const x0 = xSpans[xi];
+      const x1 = xSpans[xi + 1];
+      const z0 = zSpans[zi];
+      const z1 = zSpans[zi + 1];
+      occupied[xi][zi] = x0 < 7 || (x0 >= 22 && x1 <= 28) || x1 > 43 || (z0 >= 8 && z1 <= 15) || (z0 >= 28 && z1 <= 35);
+    }
+  }
+  return createGridPanelGeometry(xSpans, zSpans, occupied, FENCE_THICKNESS_MM);
+}
+
+function createGridPanelGeometry(xSpans, zSpans, occupied, thickness) {
+  const s = CELL_SIZE_MM;
+  const positions = [];
+  const indices = [];
+  const y0 = -s / 2;
+  const y1 = y0 + thickness;
+  for (let xi = 0; xi < xSpans.length - 1; xi += 1) {
+    for (let zi = 0; zi < zSpans.length - 1; zi += 1) {
+      if (!occupied[xi][zi]) continue;
+      const x0 = -s / 2 + xSpans[xi];
+      const x1 = -s / 2 + xSpans[xi + 1];
+      const z0 = -s / 2 + zSpans[zi];
+      const z1 = -s / 2 + zSpans[zi + 1];
+      const vertices = {
+        p000: [x0, y0, z0],
+        p100: [x1, y0, z0],
+        p110: [x1, y1, z0],
+        p010: [x0, y1, z0],
+        p001: [x0, y0, z1],
+        p101: [x1, y0, z1],
+        p111: [x1, y1, z1],
+        p011: [x0, y1, z1]
+      };
+      appendFace(positions, indices, vertices.p000, vertices.p001, vertices.p101, vertices.p100);
+      appendFace(positions, indices, vertices.p010, vertices.p110, vertices.p111, vertices.p011);
+      if (!occupied[xi - 1]?.[zi]) appendFace(positions, indices, vertices.p000, vertices.p010, vertices.p011, vertices.p001);
+      if (!occupied[xi + 1]?.[zi]) appendFace(positions, indices, vertices.p100, vertices.p101, vertices.p111, vertices.p110);
+      if (!occupied[xi]?.[zi - 1]) appendFace(positions, indices, vertices.p000, vertices.p100, vertices.p110, vertices.p010);
+      if (!occupied[xi]?.[zi + 1]) appendFace(positions, indices, vertices.p001, vertices.p011, vertices.p111, vertices.p101);
+    }
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
 }
 
 function createStairStepGeometry() {

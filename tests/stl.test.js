@@ -302,6 +302,65 @@ test("brick stair step exports side relief on its L-profile sides", () => {
   })).project).triangleCount);
 });
 
+test("fence panel STL is a hollow 10mm thick panel without material relief", () => {
+  const brickProject = createProject({ name: "Fence Brick" });
+  const brickPlaced = setBlock(brickProject, makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    shape: "fence_panel",
+    material: "brick",
+    textureSeed: "fence-brick"
+  }));
+  const plainProject = createProject({ name: "Fence Plain" });
+  const plainPlaced = setBlock(plainProject, makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    shape: "fence_panel",
+    material: "plain"
+  }));
+  const brickExported = exportAsciiStl(brickPlaced.project);
+  const plainExported = exportAsciiStl(plainPlaced.project);
+  assert.equal(brickExported.ok, true);
+  assert.equal(plainExported.ok, true);
+  assert.equal(brickExported.triangleCount, plainExported.triangleCount, "fence should not add brick relief geometry");
+  assert.deepEqual(nonManifoldEdges(brickExported.stl), []);
+
+  const vertices = verticesFromStl(brickExported.stl);
+  assert.equal(Math.min(...vertices.map((vertex) => vertex.x)), 0);
+  assert.equal(Math.max(...vertices.map((vertex) => vertex.x)), 50);
+  assert.equal(Math.min(...vertices.map((vertex) => vertex.y)), 0);
+  assert.equal(Math.max(...vertices.map((vertex) => vertex.y)), 10);
+  assert.equal(Math.min(...vertices.map((vertex) => vertex.z)), 0);
+  assert.equal(Math.max(...vertices.map((vertex) => vertex.z)), 50);
+  const triangles = trianglesFromStl(brickExported.stl);
+  assert.equal(coversPointInXz(triangles, 14, 22), false, "fence gaps should be hollow");
+  assert.equal(coversPointInXz(triangles, 25, 22), true, "middle fence post should be solid");
+  assert.equal(coversPointInXz(triangles, 14, 10), true, "horizontal rail should be solid");
+});
+
+test("rotated fence panel STL moves the 10mm thickness to another side", () => {
+  const project = createProject({ name: "Rotated Fence" });
+  const placed = setBlock(project, makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    shape: "fence_panel",
+    material: "plain",
+    rotation: 90
+  }));
+  const exported = exportAsciiStl(placed.project);
+  assert.equal(exported.ok, true);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+  const vertices = verticesFromStl(exported.stl);
+  assert.equal(Math.min(...vertices.map((vertex) => vertex.x)), 40);
+  assert.equal(Math.max(...vertices.map((vertex) => vertex.x)), 50);
+  assert.equal(Math.min(...vertices.map((vertex) => vertex.y)), 0);
+  assert.equal(Math.max(...vertices.map((vertex) => vertex.y)), 50);
+  assert.equal(Math.max(...vertices.map((vertex) => vertex.z)), 50);
+});
+
 test("available materials are brick and plain only", () => {
   for (const material of ["brick", "plain"]) {
     const project = createProject({ name: `${material} Relief` });

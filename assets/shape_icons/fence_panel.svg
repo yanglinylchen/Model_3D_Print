@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="柵欄">
+  <defs>
+    <linearGradient id="fence" x1="18" x2="78" y1="18" y2="78" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#eef2ef"/>
+      <stop offset="1" stop-color="#aab4ae"/>
+    </linearGradient>
+  </defs>
+  <rect x="18" y="18" width="12" height="60" rx="3" fill="url(#fence)"/>
+  <rect x="42" y="18" width="12" height="60" rx="3" fill="url(#fence)"/>
+  <rect x="66" y="18" width="12" height="60" rx="3" fill="url(#fence)"/>
+  <rect x="16" y="32" width="64" height="12" rx="3" fill="#d9dfdb"/>
+  <rect x="16" y="58" width="64" height="12" rx="3" fill="#c7d0ca"/>
+  <path d="M24 18v60M48 18v60M72 18v60M16 38h64M16 64h64" stroke="#7f8d86" stroke-width="3" stroke-linecap="round"/>
+</svg>

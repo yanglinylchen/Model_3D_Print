@@ -127,6 +127,14 @@ test("stair step allows direct placement above because it has flat tread surface
   assert.equal(upper.ok, true);
 });
 
+test("fence panel occupies one regular grid cell", () => {
+  const project = createProject();
+  const placed = setBlock(project, makeBlock({ x: 2, y: 2, z: 0, shape: "fence_panel", material: "brick" }));
+  assert.equal(placed.ok, true);
+  assert.equal(placed.block.shape, "fence_panel");
+  assert.equal(placed.project.blocks.length, 1);
+});
+
 test("undo history retains only 50 steps", () => {
   let project = createProject({ workspaceCells: { x: 100, y: 1, z: 1 } });
   const history = new ProjectHistory(project);

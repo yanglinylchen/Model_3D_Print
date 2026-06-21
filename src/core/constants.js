@@ -50,6 +50,12 @@ export const SHAPES = Object.freeze({
     maxHeightMm: CELL_SIZE_MM,
     panelThicknessMm: 10
   },
+  fence_panel: {
+    id: "fence_panel",
+    label: "柵欄",
+    maxHeightMm: CELL_SIZE_MM,
+    panelThicknessMm: 10
+  },
   door_panel: {
     id: "door_panel",
     label: "門",

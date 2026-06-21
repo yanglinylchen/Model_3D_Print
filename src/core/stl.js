@@ -7,6 +7,7 @@ const BRICK_MORTAR_GAP_MM = 1.2;
 const BRICK_ROWS = 5;
 const WINDOW_THICKNESS_MM = 10;
 const WINDOW_BAR_MM = 8;
+const FENCE_THICKNESS_MM = 10;
 const DOOR_THICKNESS_MM = 10;
 const DOOR_BACK_RECESS_MM = 2;
 const DOOR_RAIL_MM = 7;
@@ -74,6 +75,9 @@ export function trianglesForBlock(block, project = null) {
   }
   if (block.shape === "window_cross") {
     return rotateTrianglesZ(windowCrossTriangles(x, y, z), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
+  }
+  if (block.shape === "fence_panel") {
+    return rotateTrianglesZ(fencePanelTriangles(x, y, z), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
   }
   if (block.shape === "door_panel") {
     return rotateTrianglesZ(doorPanelTriangles(x, y, z), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
@@ -296,6 +300,58 @@ function windowCrossTriangles(x, y, z) {
       const x1 = x + spans[xi + 1];
       const z0 = z + spans[zi];
       const z1 = z + spans[zi + 1];
+      const vertices = {
+        p000: [x0, y0, z0],
+        p100: [x1, y0, z0],
+        p110: [x1, y1, z0],
+        p010: [x0, y1, z0],
+        p001: [x0, y0, z1],
+        p101: [x1, y0, z1],
+        p111: [x1, y1, z1],
+        p011: [x0, y1, z1]
+      };
+      const faces = [
+        [vertices.p000, vertices.p001, vertices.p101, vertices.p100],
+        [vertices.p010, vertices.p110, vertices.p111, vertices.p011]
+      ];
+      if (!occupied[xi - 1]?.[zi]) faces.push([vertices.p000, vertices.p010, vertices.p011, vertices.p001]);
+      if (!occupied[xi + 1]?.[zi]) faces.push([vertices.p100, vertices.p101, vertices.p111, vertices.p110]);
+      if (!occupied[xi]?.[zi - 1]) faces.push([vertices.p000, vertices.p100, vertices.p110, vertices.p010]);
+      if (!occupied[xi]?.[zi + 1]) faces.push([vertices.p001, vertices.p011, vertices.p111, vertices.p101]);
+      triangles.push(...facesToTriangles(faces));
+    }
+  }
+  return triangles;
+}
+
+function fencePanelTriangles(x, y, z) {
+  const xSpans = [0, 7, 18, 22, 28, 32, 43, 50];
+  const zSpans = [0, 8, 15, 28, 35, 50];
+  const occupied = [];
+  for (let xi = 0; xi < xSpans.length - 1; xi += 1) {
+    occupied[xi] = [];
+    for (let zi = 0; zi < zSpans.length - 1; zi += 1) {
+      const x0 = xSpans[xi];
+      const x1 = xSpans[xi + 1];
+      const z0 = zSpans[zi];
+      const z1 = zSpans[zi + 1];
+      occupied[xi][zi] = x0 < 7 || (x0 >= 22 && x1 <= 28) || x1 > 43 || (z0 >= 8 && z1 <= 15) || (z0 >= 28 && z1 <= 35);
+    }
+  }
+  return gridPanelTriangles(x, y, z, xSpans, zSpans, occupied, FENCE_THICKNESS_MM);
+}
+
+function gridPanelTriangles(x, y, z, xSpans, zSpans, occupied, thickness) {
+  const triangles = [];
+  const y0 = y;
+  const y1 = y + thickness;
+  for (let xi = 0; xi < xSpans.length - 1; xi += 1) {
+    for (let zi = 0; zi < zSpans.length - 1; zi += 1) {
+      if (!occupied[xi][zi]) continue;
+      const x0 = x + xSpans[xi];
+      const x1 = x + xSpans[xi + 1];
+      const z0 = z + zSpans[zi];
+      const z1 = z + zSpans[zi + 1];
       const vertices = {
         p000: [x0, y0, z0],
         p100: [x1, y0, z0],
