@@ -7,7 +7,9 @@
   </defs>
   <path d="M24 10h48v76H24z" fill="#4d4034"/>
   <path d="M30 16h36v64H30z" fill="url(#doorFace)"/>
-  <path d="M36 24h24v20H36V24Zm0 30h24v18H36V54Z" fill="#b9ab9b"/>
-  <path d="M30 16h36v8H30V16Zm0 28h36v8H30v-8Zm0 28h36v8H30v-8Zm0-56h7v64h-7V16Zm29 0h7v64h-7V16Z" fill="#f0e8dc"/>
-  <rect x="55" y="48" width="6" height="8" rx="2" fill="#5d5146"/>
+  <path d="M36 24h24v22H36V24Z" fill="#b9d4df"/>
+  <path d="M36 58h24v14H36V58Z" fill="#b9ab9b"/>
+  <path d="M30 16h36v7H30V16Zm0 29h36v7H30v-7Zm0 27h36v8H30v-8Zm0-56h7v64h-7V16Zm29 0h7v64h-7V16Zm15 6h6v29h-6V22Zm-20 0h6v29h-6V22Z" fill="#f0e8dc"/>
+  <path d="M37 31h22v6H37v-6Zm10-8h6v29h-6V23Z" fill="#eef6f7"/>
+  <rect x="55" y="61" width="6" height="7" rx="2" fill="#5d5146"/>
 </svg>

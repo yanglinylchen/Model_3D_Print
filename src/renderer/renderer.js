@@ -296,68 +296,54 @@ function createGeometry(shape) {
 
 function createDoorPanelGeometry() {
   const s = CELL_SIZE_MM;
-  const { xSpans, zSpans, depths } = doorDepthGrid();
+  const { xSpans, zSpans, cells } = doorPanelGrid();
   const backY = -s / 2 + DOOR_THICKNESS_MM;
   const positions = [];
   const indices = [];
 
   for (let xi = 0; xi < xSpans.length - 1; xi += 1) {
     for (let zi = 0; zi < zSpans.length - 1; zi += 1) {
-      const depth = depths[xi][zi];
+      if (!cells[xi][zi].occupied) continue;
+      const depth = cells[xi][zi].depth;
+      const x0 = -s / 2 + xSpans[xi];
+      const x1 = -s / 2 + xSpans[xi + 1];
+      const z0 = -s / 2 + zSpans[zi];
+      const z1 = -s / 2 + zSpans[zi + 1];
       appendFace(
         positions,
         indices,
-        [-s / 2 + xSpans[xi], -s / 2 + depth, -s / 2 + zSpans[zi]],
-        [-s / 2 + xSpans[xi + 1], -s / 2 + depth, -s / 2 + zSpans[zi]],
-        [-s / 2 + xSpans[xi + 1], -s / 2 + depth, -s / 2 + zSpans[zi + 1]],
-        [-s / 2 + xSpans[xi], -s / 2 + depth, -s / 2 + zSpans[zi + 1]]
+        [x0, -s / 2 + depth, z0],
+        [x1, -s / 2 + depth, z0],
+        [x1, -s / 2 + depth, z1],
+        [x0, -s / 2 + depth, z1]
       );
       appendFace(
         positions,
         indices,
-        [-s / 2 + xSpans[xi], backY, -s / 2 + zSpans[zi]],
-        [-s / 2 + xSpans[xi], backY, -s / 2 + zSpans[zi + 1]],
-        [-s / 2 + xSpans[xi + 1], backY, -s / 2 + zSpans[zi + 1]],
-        [-s / 2 + xSpans[xi + 1], backY, -s / 2 + zSpans[zi]]
+        [x0, backY, z0],
+        [x0, backY, z1],
+        [x1, backY, z1],
+        [x1, backY, z0]
       );
-    }
-  }
 
-  for (let zi = 0; zi < zSpans.length - 1; zi += 1) {
-    const leftDepth = depths[0][zi];
-    const rightDepth = depths[depths.length - 1][zi];
-    appendFace(positions, indices, [-s / 2, -s / 2 + leftDepth, -s / 2 + zSpans[zi]], [-s / 2, backY, -s / 2 + zSpans[zi]], [-s / 2, backY, -s / 2 + zSpans[zi + 1]], [-s / 2, -s / 2 + leftDepth, -s / 2 + zSpans[zi + 1]]);
-    appendFace(positions, indices, [s / 2, -s / 2 + rightDepth, -s / 2 + zSpans[zi]], [s / 2, -s / 2 + rightDepth, -s / 2 + zSpans[zi + 1]], [s / 2, backY, -s / 2 + zSpans[zi + 1]], [s / 2, backY, -s / 2 + zSpans[zi]]);
-  }
-
-  for (let xi = 0; xi < xSpans.length - 1; xi += 1) {
-    const bottomDepth = depths[xi][0];
-    const topDepth = depths[xi][zSpans.length - 2];
-    appendFace(positions, indices, [-s / 2 + xSpans[xi], -s / 2 + bottomDepth, -s / 2], [-s / 2 + xSpans[xi + 1], -s / 2 + bottomDepth, -s / 2], [-s / 2 + xSpans[xi + 1], backY, -s / 2], [-s / 2 + xSpans[xi], backY, -s / 2]);
-    appendFace(positions, indices, [-s / 2 + xSpans[xi], -s / 2 + topDepth, -s / 2 + s * 2], [-s / 2 + xSpans[xi], backY, -s / 2 + s * 2], [-s / 2 + xSpans[xi + 1], backY, -s / 2 + s * 2], [-s / 2 + xSpans[xi + 1], -s / 2 + topDepth, -s / 2 + s * 2]);
-  }
-
-  for (let xi = 0; xi < xSpans.length - 2; xi += 1) {
-    for (let zi = 0; zi < zSpans.length - 1; zi += 1) {
-      const leftDepth = depths[xi][zi];
-      const rightDepth = depths[xi + 1][zi];
-      if (leftDepth === rightDepth) continue;
-      const xEdge = -s / 2 + xSpans[xi + 1];
-      const y0 = -s / 2 + Math.min(leftDepth, rightDepth);
-      const y1 = -s / 2 + Math.max(leftDepth, rightDepth);
-      appendFace(positions, indices, [xEdge, y0, -s / 2 + zSpans[zi]], [xEdge, y1, -s / 2 + zSpans[zi]], [xEdge, y1, -s / 2 + zSpans[zi + 1]], [xEdge, y0, -s / 2 + zSpans[zi + 1]]);
-    }
-  }
-
-  for (let xi = 0; xi < xSpans.length - 1; xi += 1) {
-    for (let zi = 0; zi < zSpans.length - 2; zi += 1) {
-      const lowerDepth = depths[xi][zi];
-      const upperDepth = depths[xi][zi + 1];
-      if (lowerDepth === upperDepth) continue;
-      const zEdge = -s / 2 + zSpans[zi + 1];
-      const y0 = -s / 2 + Math.min(lowerDepth, upperDepth);
-      const y1 = -s / 2 + Math.max(lowerDepth, upperDepth);
-      appendFace(positions, indices, [-s / 2 + xSpans[xi], y0, zEdge], [-s / 2 + xSpans[xi + 1], y0, zEdge], [-s / 2 + xSpans[xi + 1], y1, zEdge], [-s / 2 + xSpans[xi], y1, zEdge]);
+      const left = cells[xi - 1]?.[zi] || null;
+      const right = cells[xi + 1]?.[zi] || null;
+      const lower = cells[xi]?.[zi - 1] || null;
+      const upper = cells[xi]?.[zi + 1] || null;
+      if (!left?.occupied || left.depth !== depth) {
+        const neighborDepth = left?.occupied ? left.depth : DOOR_THICKNESS_MM;
+        appendEdgeFaceX(positions, indices, x0, -s / 2, z0, z1, depth, neighborDepth);
+      }
+      if (!right?.occupied) {
+        appendEdgeFaceX(positions, indices, x1, -s / 2, z0, z1, depth, DOOR_THICKNESS_MM);
+      }
+      if (!lower?.occupied || lower.depth !== depth) {
+        const neighborDepth = lower?.occupied ? lower.depth : DOOR_THICKNESS_MM;
+        appendEdgeFaceZ(positions, indices, z0, -s / 2, x0, x1, depth, neighborDepth);
+      }
+      if (!upper?.occupied) {
+        appendEdgeFaceZ(positions, indices, z1, -s / 2, x0, x1, depth, DOOR_THICKNESS_MM);
+      }
     }
   }
 
@@ -368,34 +354,63 @@ function createDoorPanelGeometry() {
   return geometry;
 }
 
-function doorDepthGrid() {
+function appendEdgeFaceX(positions, indices, x, y, z0, z1, depth, neighborDepth) {
+  const y0 = y + Math.min(depth, neighborDepth);
+  const y1 = y + Math.max(depth, neighborDepth);
+  appendFace(positions, indices, [x, y0, z0], [x, y1, z0], [x, y1, z1], [x, y0, z1]);
+}
+
+function appendEdgeFaceZ(positions, indices, z, y, x0, x1, depth, neighborDepth) {
+  const y0 = y + Math.min(depth, neighborDepth);
+  const y1 = y + Math.max(depth, neighborDepth);
+  appendFace(positions, indices, [x0, y0, z], [x1, y0, z], [x1, y1, z], [x0, y1, z]);
+}
+
+function doorPanelGrid() {
   const r = DOOR_RAIL_MM;
-  const mid0 = CELL_SIZE_MM - DOOR_MID_RAIL_MM / 2;
-  const mid1 = CELL_SIZE_MM + DOOR_MID_RAIL_MM / 2;
+  const center0 = CELL_SIZE_MM / 2 - WINDOW_BAR_MM / 2;
+  const center1 = CELL_SIZE_MM / 2 + WINDOW_BAR_MM / 2;
   const handle0 = CELL_SIZE_MM * 0.68;
   const handle1 = CELL_SIZE_MM * 0.8;
-  const handleZ0 = CELL_SIZE_MM * 0.86;
-  const handleZ1 = CELL_SIZE_MM * 1.06;
-  const xSpans = [0, r, handle0, handle1, CELL_SIZE_MM - r, CELL_SIZE_MM];
-  const zSpans = [0, r, handleZ0, mid0, mid1, handleZ1, CELL_SIZE_MM * 2 - r, CELL_SIZE_MM * 2];
-  const depths = [];
+  const handleZ0 = CELL_SIZE_MM * 0.58;
+  const handleZ1 = CELL_SIZE_MM * 0.76;
+  const xSpans = uniqueSorted([0, r, center0, center1, handle0, handle1, CELL_SIZE_MM - r, CELL_SIZE_MM]);
+  const zSpans = uniqueSorted([0, r, handleZ0, handleZ1, CELL_SIZE_MM, CELL_SIZE_MM + r, CELL_SIZE_MM + center0, CELL_SIZE_MM + center1, CELL_SIZE_MM * 2 - r, CELL_SIZE_MM * 2]);
+  const cells = [];
   for (let xi = 0; xi < xSpans.length - 1; xi += 1) {
-    depths[xi] = [];
+    cells[xi] = [];
     for (let zi = 0; zi < zSpans.length - 1; zi += 1) {
       const x0 = xSpans[xi];
       const x1 = xSpans[xi + 1];
       const z0 = zSpans[zi];
       const z1 = zSpans[zi + 1];
-      const raised = x0 < r
+      const lowerHalf = z1 <= CELL_SIZE_MM;
+      const upperFrame = z0 >= CELL_SIZE_MM && (
+        x0 < r
+        || x1 > CELL_SIZE_MM - r
+        || z0 < CELL_SIZE_MM + r
+        || z1 > CELL_SIZE_MM * 2 - r
+        || (x0 < center1 && x1 > center0)
+        || (z0 < CELL_SIZE_MM + center1 && z1 > CELL_SIZE_MM + center0)
+      );
+      const lowerRaised = lowerHalf && (
+        x0 < r
         || x1 > CELL_SIZE_MM - r
         || z0 < r
-        || z1 > CELL_SIZE_MM * 2 - r
-        || (z0 < mid1 && z1 > mid0)
-        || (x0 >= handle0 && x1 <= handle1 && z0 >= handleZ0 && z1 <= handleZ1);
-      depths[xi][zi] = raised ? 0 : DOOR_BACK_RECESS_MM;
+        || z1 > CELL_SIZE_MM - r
+        || (x0 >= handle0 && x1 <= handle1 && z0 >= handleZ0 && z1 <= handleZ1)
+      );
+      cells[xi][zi] = {
+        occupied: lowerHalf || upperFrame,
+        depth: lowerRaised || upperFrame ? 0 : DOOR_BACK_RECESS_MM
+      };
     }
   }
-  return { xSpans, zSpans, depths };
+  return { xSpans, zSpans, cells };
+}
+
+function uniqueSorted(values) {
+  return [...new Set(values.map((value) => Number(value.toFixed(6))))].sort((a, b) => a - b);
 }
 
 function createWindowCrossGeometry() {

@@ -224,6 +224,11 @@ test("door panel STL is a 100mm tall 10mm thick printable panel", () => {
   assert.equal(Math.max(...vertices.map((vertex) => vertex.y)), 10);
   assert.equal(Math.min(...vertices.map((vertex) => vertex.z)), 0);
   assert.equal(Math.max(...vertices.map((vertex) => vertex.z)), 100);
+  const triangles = trianglesFromStl(exported.stl);
+  assert.equal(coversPointInXz(triangles, 14, 64), false, "upper door panes should be hollow");
+  assert.equal(coversPointInXz(triangles, 25, 64), true, "upper door should keep the vertical window bar");
+  assert.equal(coversPointInXz(triangles, 14, 75), true, "upper door should keep the horizontal window bar");
+  assert.equal(coversPointInXz(triangles, 14, 25), true, "lower door panel should remain solid");
 });
 
 test("rotated door panel STL moves the 10mm panel to another side", () => {
@@ -301,4 +306,26 @@ function verticesFromStl(stl) {
     y: Number(match[2]),
     z: Number(match[3])
   }));
+}
+
+function trianglesFromStl(stl) {
+  const vertices = verticesFromStl(stl);
+  const triangles = [];
+  for (let index = 0; index < vertices.length; index += 3) {
+    triangles.push([vertices[index], vertices[index + 1], vertices[index + 2]]);
+  }
+  return triangles;
+}
+
+function coversPointInXz(triangles, x, z) {
+  return triangles.some((triangle) => pointInTriangleXz(triangle, x, z));
+}
+
+function pointInTriangleXz([a, b, c], x, z) {
+  const denominator = ((b.z - c.z) * (a.x - c.x)) + ((c.x - b.x) * (a.z - c.z));
+  if (Math.abs(denominator) < 1e-8) return false;
+  const alpha = (((b.z - c.z) * (x - c.x)) + ((c.x - b.x) * (z - c.z))) / denominator;
+  const beta = (((c.z - a.z) * (x - c.x)) + ((a.x - c.x) * (z - c.z))) / denominator;
+  const gamma = 1 - alpha - beta;
+  return alpha >= -1e-8 && beta >= -1e-8 && gamma >= -1e-8;
 }
