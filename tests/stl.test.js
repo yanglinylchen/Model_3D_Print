@@ -38,9 +38,38 @@ test("adjacent cubes share the 50mm boundary instead of exporting a spacing gap"
   const exported = exportAsciiStl(project);
   assert.equal(exported.ok, true);
   const xValues = [...exported.stl.matchAll(/vertex ([\d.-]+) [\d.-]+ [\d.-]+/g)].map((match) => Number(match[1]));
-  assert.ok(xValues.includes(50), "expected adjacent cubes to meet at x=50");
   assert.equal(Math.min(...xValues), 0);
   assert.equal(Math.max(...xValues), 100);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+});
+
+test("plain cubes do not export relief shells that create non-manifold edges", () => {
+  const project = createProject({ name: "Plain Cube" });
+  const placed = setBlock(project, makeBlock({ x: 0, y: 0, z: 0, material: "plain" }));
+  const exported = exportAsciiStl(placed.project);
+  assert.equal(exported.ok, true);
+  assert.equal(exported.triangleCount, 12);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+});
+
+test("plain cube with plain prism roof exports as closed manifold shell", () => {
+  let project = createProject({ name: "Plain Roof" });
+  project = setBlock(project, makeBlock({ x: 0, y: 0, z: 0, material: "plain" })).project;
+  project = setBlock(project, makeBlock({ x: 0, y: 0, z: 1, shape: "prism_45", material: "plain" })).project;
+  const exported = exportAsciiStl(project);
+  assert.equal(exported.ok, true);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+});
+
+test("plain prism roof row exports as closed manifold shell", () => {
+  let project = createProject({ name: "Plain Roof Row", workspaceCells: { x: 4, y: 4, z: 4 } });
+  for (let y = 0; y < 2; y += 1) {
+    project = setBlock(project, makeBlock({ x: 0, y, z: 0, material: "plain" })).project;
+    project = setBlock(project, makeBlock({ x: 0, y, z: 1, shape: "prism_45", material: "plain" })).project;
+  }
+  const exported = exportAsciiStl(project);
+  assert.equal(exported.ok, true);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
 });
 
 test("brick STL export generates dense procedural relief geometry", () => {
@@ -134,3 +163,21 @@ test("blocks STL export for an empty model", () => {
   assert.equal(exported.ok, false);
   assert.match(exported.reason, /沒有可輸出/);
 });
+
+function nonManifoldEdges(stl) {
+  const vertices = [...stl.matchAll(/vertex ([\d.-]+) ([\d.-]+) ([\d.-]+)/g)].map((match) => [
+    Number(match[1]).toFixed(5),
+    Number(match[2]).toFixed(5),
+    Number(match[3]).toFixed(5)
+  ]);
+  const counts = new Map();
+  for (let index = 0; index < vertices.length; index += 3) {
+    for (const [a, b] of [[0, 1], [1, 2], [2, 0]]) {
+      const key = [vertices[index + a].join(","), vertices[index + b].join(",")].sort().join("|");
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+  }
+  return [...counts.entries()]
+    .filter(([, count]) => count !== 2)
+    .map(([key, count]) => `${key}:${count}`);
+}

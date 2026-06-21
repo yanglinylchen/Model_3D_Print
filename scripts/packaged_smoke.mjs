@@ -23,6 +23,8 @@ try {
     pageErrors.push(error.message);
   });
 
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
   await page.waitForSelector("#viewport", { timeout: 10_000 });
   await page.waitForFunction(() => {
     return document.querySelector("#blockCount")?.textContent?.includes("0 / 10000");

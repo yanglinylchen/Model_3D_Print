@@ -3,7 +3,7 @@ import { CELL_SIZE_MM, MATERIALS, PRINT_DEFAULTS, SHAPES } from "./constants.js"
 export function exportAsciiStl(project, name = project.name || "model_3d_print") {
   const triangles = [];
   for (const block of project.blocks) {
-    triangles.push(...trianglesForBlock(block));
+    triangles.push(...trianglesForBlock(block, project));
     triangles.push(...reliefTrianglesForBlock(project, block));
   }
   const repaired = repairTriangles(triangles);
@@ -29,6 +29,7 @@ export function exportAsciiStl(project, name = project.name || "model_3d_print")
 
 export function reliefTrianglesForBlock(project, block) {
   if (block.shape !== "cube") return [];
+  if (block.material === "plain") return [];
   const material = MATERIALS[block.material] || MATERIALS.brick;
   const depth = Math.min(material.reliefDepthMm, PRINT_DEFAULTS.maxReliefMm);
   const x = block.x * CELL_SIZE_MM;
@@ -56,17 +57,17 @@ export function reliefTrianglesForBlock(project, block) {
   return boxes.flatMap((box) => cuboidTriangles(box.min, box.max));
 }
 
-export function trianglesForBlock(block) {
+export function trianglesForBlock(block, project = null) {
   const x = block.x * CELL_SIZE_MM;
   const y = block.y * CELL_SIZE_MM;
   const z = block.z * CELL_SIZE_MM;
   if (block.shape === "prism_30") {
-    return triangularPrismTriangles(x, y, z, Math.tan(Math.PI / 6) * CELL_SIZE_MM, block);
+    return triangularPrismTriangles(x, y, z, Math.tan(Math.PI / 6) * CELL_SIZE_MM, block, project);
   }
   if (block.shape === "prism_45") {
-    return triangularPrismTriangles(x, y, z, CELL_SIZE_MM, block);
+    return triangularPrismTriangles(x, y, z, CELL_SIZE_MM, block, project);
   }
-  return cubeTriangles(x, y, z, CELL_SIZE_MM, block);
+  return cubeTriangles(x, y, z, CELL_SIZE_MM, block, project);
 }
 
 export function validateTriangles(triangles) {
@@ -97,12 +98,33 @@ export function repairTriangles(triangles) {
   return repaired;
 }
 
-function cubeTriangles(x, y, z, size, block) {
-  return cuboidTriangles([x, y, z], [x + size, y + size, z + size]);
+function cubeTriangles(x, y, z, size, block, project) {
+  if (!project) return cuboidTriangles([x, y, z], [x + size, y + size, z + size]);
+  const vertices = cubeVertices([x, y, z], [x + size, y + size, z + size]);
+  const faces = [];
+  if (isFaceExposed(project, block, "bottom")) faces.push([vertices.p000, vertices.p100, vertices.p110, vertices.p010]);
+  if (isFaceExposed(project, block, "top")) faces.push([vertices.p001, vertices.p011, vertices.p111, vertices.p101]);
+  if (isFaceExposed(project, block, "south")) faces.push([vertices.p000, vertices.p001, vertices.p101, vertices.p100]);
+  if (isFaceExposed(project, block, "east")) faces.push([vertices.p100, vertices.p101, vertices.p111, vertices.p110]);
+  if (isFaceExposed(project, block, "north")) faces.push([vertices.p110, vertices.p111, vertices.p011, vertices.p010]);
+  if (isFaceExposed(project, block, "west")) faces.push([vertices.p010, vertices.p011, vertices.p001, vertices.p000]);
+  return facesToTriangles(faces);
 }
 
 function cuboidTriangles(min, max) {
-  const vertices = {
+  const vertices = cubeVertices(min, max);
+  return facesToTriangles([
+    [vertices.p000, vertices.p100, vertices.p110, vertices.p010],
+    [vertices.p001, vertices.p011, vertices.p111, vertices.p101],
+    [vertices.p000, vertices.p001, vertices.p101, vertices.p100],
+    [vertices.p100, vertices.p101, vertices.p111, vertices.p110],
+    [vertices.p110, vertices.p111, vertices.p011, vertices.p010],
+    [vertices.p010, vertices.p011, vertices.p001, vertices.p000]
+  ]);
+}
+
+function cubeVertices(min, max) {
+  return {
     p000: [min[0], min[1], min[2]],
     p100: [max[0], min[1], min[2]],
     p110: [max[0], max[1], min[2]],
@@ -112,14 +134,6 @@ function cuboidTriangles(min, max) {
     p111: [max[0], max[1], max[2]],
     p011: [min[0], max[1], max[2]]
   };
-  return facesToTriangles([
-    [vertices.p000, vertices.p100, vertices.p110, vertices.p010],
-    [vertices.p001, vertices.p011, vertices.p111, vertices.p101],
-    [vertices.p000, vertices.p001, vertices.p101, vertices.p100],
-    [vertices.p100, vertices.p101, vertices.p111, vertices.p110],
-    [vertices.p110, vertices.p111, vertices.p011, vertices.p010],
-    [vertices.p010, vertices.p011, vertices.p001, vertices.p000]
-  ]);
 }
 
 function reliefBox(x1, y1, z1, x2, y2, z2) {
@@ -131,6 +145,7 @@ function reliefBox(x1, y1, z1, x2, y2, z2) {
 
 function isFaceExposed(project, block, face) {
   const offsets = {
+    bottom: [0, 0, -1],
     top: [0, 0, 1],
     east: [1, 0, 0],
     west: [-1, 0, 0],
@@ -142,7 +157,6 @@ function isFaceExposed(project, block, face) {
 }
 
 function faceReliefBoxes(block, face, x, y, z, size, height, depth) {
-  if (block.material === "plain" && face !== "top") return [];
   const seed = `${block.textureSeed || block.material}-${face}-${block.rotation || 0}`;
   const rects = materialReliefRects(block.material, seed, size, Math.max(height, PRINT_DEFAULTS.minFeatureMm));
   return rects.map((rect) => rectToFaceBox(rect, face, x, y, z, size, height, depth));
@@ -150,7 +164,7 @@ function faceReliefBoxes(block, face, x, y, z, size, height, depth) {
 
 function materialReliefRects(material, seed, width, height) {
   if (material === "brick") return brickReliefRects(seed, width, height);
-  return plainReliefRects(width, height);
+  return [];
 }
 
 function brickReliefRects(seed, width, height) {
@@ -170,13 +184,6 @@ function brickReliefRects(seed, width, height) {
       pushRect(rects, cuts[i] + mortar, v1, cuts[i + 1] - mortar, v2, 0.92 + rng() * 0.16);
     }
   }
-  return rects;
-}
-
-function plainReliefRects(width, height) {
-  const rects = [];
-  const inset = PRINT_DEFAULTS.seamRecessDepthMm;
-  pushRect(rects, inset, inset, width - inset, height - inset, 1);
   return rects;
 }
 
@@ -227,7 +234,7 @@ function hashString(input) {
   return hash >>> 0;
 }
 
-function triangularPrismTriangles(x, y, z, height, block) {
+function triangularPrismTriangles(x, y, z, height, block, project) {
   const size = CELL_SIZE_MM;
   const h = Math.min(height, size);
   const a = [x, y, z];
@@ -236,20 +243,22 @@ function triangularPrismTriangles(x, y, z, height, block) {
   const d = [x, y + size, z];
   const e = [x + size, y + size, z];
   const f = [x + size, y + size, z + h];
-  return rotateTrianglesZ([
-    [a, b, c],
-    [d, f, e],
-    ...facesToTriangles([
-      [a, d, e, b],
-      [b, e, f, c],
-      [c, f, d, a]
-    ])
-  ], [x + size / 2, y + size / 2], block.rotation || 0);
+  const faces = [];
+  if (!project || isFaceExposed(project, block, "south")) faces.push([a, b, c]);
+  if (!project || isFaceExposed(project, block, "north")) faces.push([d, f, e]);
+  if (!project || isFaceExposed(project, block, "bottom")) faces.push([a, d, e, b]);
+  if (!project || isFaceExposed(project, block, "east")) faces.push([b, e, f, c]);
+  faces.push([c, f, d, a]);
+  return rotateTrianglesZ(facesToTriangles(faces), [x + size / 2, y + size / 2], block.rotation || 0);
 }
 
 function facesToTriangles(faces) {
   const triangles = [];
   for (const face of faces) {
+    if (face.length === 3) {
+      triangles.push([face[0], face[1], face[2]]);
+      continue;
+    }
     triangles.push([face[0], face[1], face[2]]);
     triangles.push([face[0], face[2], face[3]]);
   }

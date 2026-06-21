@@ -12,6 +12,8 @@ const app = await electron.launch({
 
 try {
   const page = await app.firstWindow();
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
   await page.waitForSelector("#viewport", { timeout: 10_000 });
   await page.waitForTimeout(1500);
   const viewport = await page.locator("#viewport").boundingBox();
