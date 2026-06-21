@@ -319,7 +319,7 @@ function createArchwayGeometry() {
   const indices = [];
   appendBoxWithoutTop(positions, indices, [-s / 2, -s / 2, -s / 2], [-15, -s / 2 + DOOR_THICKNESS_MM, 50]);
   appendBoxWithoutTop(positions, indices, [15, -s / 2, -s / 2], [s / 2, -s / 2 + DOOR_THICKNESS_MM, 50]);
-  appendArchRing(positions, indices, 0, 50, 15, 25, DOOR_THICKNESS_MM, 18);
+  appendArchwayTopPanel(positions, indices, 0, 50, 15, 75, DOOR_THICKNESS_MM, 18);
   return bufferGeometry(positions, indices);
 }
 
@@ -686,33 +686,68 @@ function appendBoxWithoutTop(positions, indices, min, max) {
   }
 }
 
-function appendArchRing(positions, indices, centerX, centerZ, innerRadius, outerRadius, thickness, segments) {
+function appendArchwayTopPanel(positions, indices, centerX, springZ, innerRadius, topZ, thickness, segments) {
   const y0 = -CELL_SIZE_MM / 2;
   const y1 = y0 + thickness;
-  for (let index = 0; index < segments; index += 1) {
-    const a0 = Math.PI - (index * Math.PI) / segments;
-    const a1 = Math.PI - ((index + 1) * Math.PI) / segments;
-    const outer0 = [centerX + Math.cos(a0) * outerRadius, centerZ + Math.sin(a0) * outerRadius];
-    const outer1 = [centerX + Math.cos(a1) * outerRadius, centerZ + Math.sin(a1) * outerRadius];
-    const inner0 = [centerX + Math.cos(a0) * innerRadius, centerZ + Math.sin(a0) * innerRadius];
-    const inner1 = [centerX + Math.cos(a1) * innerRadius, centerZ + Math.sin(a1) * innerRadius];
-    const o0f = [outer0[0], y0, outer0[1]];
-    const o1f = [outer1[0], y0, outer1[1]];
-    const i1f = [inner1[0], y0, inner1[1]];
-    const i0f = [inner0[0], y0, inner0[1]];
-    const o0b = [outer0[0], y1, outer0[1]];
-    const o1b = [outer1[0], y1, outer1[1]];
-    const i1b = [inner1[0], y1, inner1[1]];
-    const i0b = [inner0[0], y1, inner0[1]];
+  const boundary = archwayBottomBoundary(centerX, springZ, innerRadius, segments);
+  const stripCount = boundary.length - 1;
+  for (let index = 0; index < stripCount; index += 1) {
+    const lower0 = boundary[index];
+    const lower1 = boundary[index + 1];
+    const top0 = [lower0[0], topZ];
+    const top1 = [lower1[0], topZ];
+    const l0f = [lower0[0], y0, lower0[1]];
+    const l1f = [lower1[0], y0, lower1[1]];
+    const t1f = [top1[0], y0, top1[1]];
+    const t0f = [top0[0], y0, top0[1]];
+    const l0b = [lower0[0], y1, lower0[1]];
+    const l1b = [lower1[0], y1, lower1[1]];
+    const t1b = [top1[0], y1, top1[1]];
+    const t0b = [top0[0], y1, top0[1]];
     for (const face of [
-      [o0f, o1f, i1f, i0f],
-      [o0b, i0b, i1b, o1b],
-      [o0f, o0b, o1b, o1f],
-      [i0f, i1f, i1b, i0b]
+      [l0f, l1f, t1f, t0f],
+      [l0b, t0b, t1b, l1b],
+      [t0f, t1f, t1b, t0b]
     ]) {
       appendFace(positions, indices, ...face);
     }
+    if (index > 0 && index <= segments) {
+      appendFace(positions, indices, l0f, l0b, l1b, l1f);
+    }
   }
+  const leftLower = boundary[0];
+  const leftTop = [leftLower[0], topZ];
+  const rightLower = boundary[stripCount];
+  const rightTop = [rightLower[0], topZ];
+  appendFace(
+    positions,
+    indices,
+    [leftLower[0], y0, leftLower[1]],
+    [leftTop[0], y0, leftTop[1]],
+    [leftTop[0], y1, leftTop[1]],
+    [leftLower[0], y1, leftLower[1]]
+  );
+  appendFace(
+    positions,
+    indices,
+    [rightLower[0], y0, rightLower[1]],
+    [rightLower[0], y1, rightLower[1]],
+    [rightTop[0], y1, rightTop[1]],
+    [rightTop[0], y0, rightTop[1]]
+  );
+}
+
+function archwayBottomBoundary(centerX, springZ, innerRadius, segments) {
+  const boundary = [[-CELL_SIZE_MM / 2, springZ]];
+  for (let index = 0; index <= segments; index += 1) {
+    const angle = Math.PI - (index * Math.PI) / segments;
+    boundary.push([
+      centerX + Math.cos(angle) * innerRadius,
+      springZ + Math.sin(angle) * innerRadius
+    ]);
+  }
+  boundary.push([CELL_SIZE_MM / 2, springZ]);
+  return boundary;
 }
 
 function bufferGeometry(positions, indices) {

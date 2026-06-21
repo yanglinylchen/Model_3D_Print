@@ -546,6 +546,7 @@ test("archway STL is a two-cell hollow panel", () => {
   assert.equal(coversPointInXz(triangles, 25, 30), false, "archway opening should stay hollow");
   assert.equal(coversPointInXz(triangles, 25, 88), false, "archway should keep a rounded opening under the arch");
   assert.equal(coversPointInXz(triangles, 25, 94), true, "archway should have a solid polygon arch above the opening");
+  assert.equal(coversPointInXz(triangles, 5, 88), true, "archway upper corners should be filled for stacking");
   assert.equal(coversPointInXz(triangles, 4, 30), true, "archway side post should be solid");
 });
 
