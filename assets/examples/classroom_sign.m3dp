@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "0.1-draft",
+  "name": "Classroom Sign",
+  "blockSizeMm": 50,
+  "workspaceCells": { "x": 12, "y": 4, "z": 5 },
+  "materials": ["brick", "wood", "stone_slab", "wool"],
+  "blocks": [
+    { "x": 1, "y": 1, "z": 0, "shape": "cube", "material": "wood", "rotation": 90, "textureSeed": "sign-frame-001" },
+    { "x": 2, "y": 1, "z": 0, "shape": "cube", "material": "wood", "rotation": 90, "textureSeed": "sign-frame-002" },
+    { "x": 3, "y": 1, "z": 0, "shape": "cube", "material": "wood", "rotation": 90, "textureSeed": "sign-frame-003" },
+    { "x": 4, "y": 1, "z": 0, "shape": "cube", "material": "wood", "rotation": 90, "textureSeed": "sign-frame-004" },
+    { "x": 5, "y": 1, "z": 0, "shape": "cube", "material": "wood", "rotation": 90, "textureSeed": "sign-frame-005" },
+    { "x": 6, "y": 1, "z": 0, "shape": "cube", "material": "wood", "rotation": 90, "textureSeed": "sign-frame-006" },
+    { "x": 7, "y": 1, "z": 0, "shape": "cube", "material": "wood", "rotation": 90, "textureSeed": "sign-frame-007" },
+    { "x": 8, "y": 1, "z": 0, "shape": "cube", "material": "wood", "rotation": 90, "textureSeed": "sign-frame-008" },
+    { "x": 3, "y": 1, "z": 1, "shape": "cube", "material": "wool", "rotation": 0, "textureSeed": "letter-001" },
+    { "x": 4, "y": 1, "z": 1, "shape": "cube", "material": "brick", "rotation": 0, "textureSeed": "letter-002" },
+    { "x": 5, "y": 1, "z": 1, "shape": "cube", "material": "wool", "rotation": 0, "textureSeed": "letter-003" },
+    { "x": 6, "y": 1, "z": 1, "shape": "cube", "material": "brick", "rotation": 0, "textureSeed": "letter-004" }
+  ]
+}
+

@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "0.1-draft",
+  "name": "Stone Bridge",
+  "blockSizeMm": 50,
+  "workspaceCells": { "x": 12, "y": 6, "z": 5 },
+  "materials": ["brick", "wood", "stone_slab", "wool"],
+  "blocks": [
+    { "x": 2, "y": 2, "z": 0, "shape": "cube", "material": "stone_slab", "rotation": 0, "textureSeed": "bridge-pier-001" },
+    { "x": 2, "y": 3, "z": 0, "shape": "cube", "material": "stone_slab", "rotation": 0, "textureSeed": "bridge-pier-002" },
+    { "x": 9, "y": 2, "z": 0, "shape": "cube", "material": "stone_slab", "rotation": 0, "textureSeed": "bridge-pier-003" },
+    { "x": 9, "y": 3, "z": 0, "shape": "cube", "material": "stone_slab", "rotation": 0, "textureSeed": "bridge-pier-004" },
+    { "x": 3, "y": 2, "z": 1, "shape": "cube", "material": "stone_slab", "rotation": 0, "textureSeed": "bridge-deck-001" },
+    { "x": 4, "y": 2, "z": 1, "shape": "cube", "material": "stone_slab", "rotation": 0, "textureSeed": "bridge-deck-002" },
+    { "x": 5, "y": 2, "z": 1, "shape": "cube", "material": "stone_slab", "rotation": 0, "textureSeed": "bridge-deck-003" },
+    { "x": 6, "y": 2, "z": 1, "shape": "cube", "material": "stone_slab", "rotation": 0, "textureSeed": "bridge-deck-004" },
+    { "x": 7, "y": 2, "z": 1, "shape": "cube", "material": "stone_slab", "rotation": 0, "textureSeed": "bridge-deck-005" },
+    { "x": 8, "y": 2, "z": 1, "shape": "cube", "material": "stone_slab", "rotation": 0, "textureSeed": "bridge-deck-006" },
+    { "x": 3, "y": 3, "z": 1, "shape": "cube", "material": "stone_slab", "rotation": 0, "textureSeed": "bridge-deck-007" },
+    { "x": 4, "y": 3, "z": 1, "shape": "cube", "material": "stone_slab", "rotation": 0, "textureSeed": "bridge-deck-008" },
+    { "x": 5, "y": 3, "z": 1, "shape": "cube", "material": "stone_slab", "rotation": 0, "textureSeed": "bridge-deck-009" },
+    { "x": 6, "y": 3, "z": 1, "shape": "cube", "material": "stone_slab", "rotation": 0, "textureSeed": "bridge-deck-010" },
+    { "x": 7, "y": 3, "z": 1, "shape": "cube", "material": "stone_slab", "rotation": 0, "textureSeed": "bridge-deck-011" },
+    { "x": 8, "y": 3, "z": 1, "shape": "cube", "material": "stone_slab", "rotation": 0, "textureSeed": "bridge-deck-012" },
+    { "x": 4, "y": 1, "z": 2, "shape": "cube", "material": "brick", "rotation": 0, "textureSeed": "rail-001" },
+    { "x": 7, "y": 4, "z": 2, "shape": "cube", "material": "brick", "rotation": 0, "textureSeed": "rail-002" }
+  ]
+}
+

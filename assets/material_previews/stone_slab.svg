@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Stone slab material preview">
+  <rect width="128" height="128" rx="10" fill="#9ba3a3"/>
+  <g fill="#aeb6b6">
+    <path d="M8 16h52l-8 32H12z"/>
+    <path d="M68 12h50v34H64z"/>
+    <path d="M18 58h42l10 54H8z"/>
+    <path d="M76 58h42v54H70z"/>
+  </g>
+  <g fill="none" stroke="#646d6e" stroke-width="4" stroke-linecap="round">
+    <path d="M16 42l38-8M70 30l40 4M18 78l48 22M82 76l28-12M72 108l34-8"/>
+    <path d="M58 8l-8 40M70 56l-10 60"/>
+  </g>
+  <g stroke="#d4dbdb" stroke-width="2" opacity="0.7">
+    <path d="M22 24h22M78 22h28M26 68h30M82 90h22"/>
+  </g>
+</svg>
+

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Wood material preview">
+  <rect width="128" height="128" rx="10" fill="#b97835"/>
+  <g fill="none" stroke="#6f421f" stroke-width="5" stroke-linecap="round">
+    <path d="M18 18c28 18 18 42 58 56 16 6 24 16 34 32"/>
+    <path d="M8 64c30-30 56-34 110-44"/>
+    <path d="M16 104c36-24 64-24 96-8"/>
+  </g>
+  <g fill="none" stroke="#e0a15d" stroke-width="3" stroke-linecap="round" opacity="0.75">
+    <path d="M32 24c18 14 18 32 44 42"/>
+    <path d="M22 76c28-18 52-22 82-26"/>
+    <path d="M42 108c18-8 38-8 58-2"/>
+  </g>
+  <ellipse cx="62" cy="62" rx="18" ry="10" fill="none" stroke="#5a3218" stroke-width="4"/>
+</svg>
+

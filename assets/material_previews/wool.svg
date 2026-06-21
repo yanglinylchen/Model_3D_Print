@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Wool material preview">
+  <rect width="128" height="128" rx="10" fill="#eee9df"/>
+  <g fill="none" stroke="#c9c2b8" stroke-width="5" stroke-linecap="round">
+    <path d="M10 26c14-16 30-16 44 0s30 16 44 0 20-10 20-10"/>
+    <path d="M8 58c16-18 34-18 50 0s34 18 50 0"/>
+    <path d="M10 90c14-16 30-16 44 0s30 16 44 0 20-10 20-10"/>
+  </g>
+  <g fill="none" stroke="#fffaf1" stroke-width="4" stroke-linecap="round" opacity="0.9">
+    <path d="M16 38c12-8 22-8 34 0"/>
+    <path d="M56 72c12-8 24-8 36 0"/>
+    <path d="M22 104c12-8 24-8 36 0"/>
+  </g>
+</svg>
+
