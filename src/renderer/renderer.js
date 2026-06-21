@@ -57,6 +57,7 @@ const state = {
   cameraAngle: Math.PI / 4,
   cameraPitch: 0.62,
   cameraLift: 0,
+  cameraPan: { x: 0, y: 0 },
   pressedKeys: new Set(),
   warning: ""
 };
@@ -139,6 +140,8 @@ function bindControls() {
   document.getElementById("applyWorkspace").addEventListener("click", applyWorkspace);
   document.getElementById("cameraLeft").addEventListener("click", () => rotateCamera(-0.2));
   document.getElementById("cameraRight").addEventListener("click", () => rotateCamera(0.2));
+  elements.materialList.addEventListener("change", changeActiveMaterial);
+  elements.shapeList.addEventListener("change", changeActiveShape);
   elements.selectedMaterial.addEventListener("change", changeSelectedMaterial);
   elements.canvas.addEventListener("click", handleViewportClick);
   elements.canvas.addEventListener("pointermove", handlePointerMove);
@@ -152,15 +155,11 @@ function renderMaterialControls() {
   elements.materialList.innerHTML = "";
   elements.selectedMaterial.innerHTML = "";
   for (const material of Object.values(MATERIALS)) {
-    const button = document.createElement("button");
-    button.className = "material-button";
-    button.dataset.material = material.id;
-    button.innerHTML = `<img src="${ASSET}/material_previews/${material.id}.svg" alt=""><span>${material.label}</span>`;
-    button.addEventListener("click", () => {
-      state.selectedMaterial = material.id;
-      updateUi();
-    });
-    elements.materialList.append(button);
+    const pickerOption = document.createElement("option");
+    pickerOption.value = material.id;
+    pickerOption.dataset.material = material.id;
+    pickerOption.textContent = material.label;
+    elements.materialList.append(pickerOption);
 
     const option = document.createElement("option");
     option.value = material.id;
@@ -170,27 +169,13 @@ function renderMaterialControls() {
 }
 
 function renderShapeControls() {
-  const iconByShape = {
-    cube: "cube.svg",
-    prism_30: "prism_30.svg",
-    prism_45: "prism_45.svg",
-    stair_step: "stair_step.svg",
-    window_cross: "window_cross.svg",
-    fence_panel: "fence_panel.svg",
-    door_panel: "door_panel.svg"
-  };
   elements.shapeList.innerHTML = "";
   for (const shape of Object.values(SHAPES)) {
-    const button = document.createElement("button");
-    button.className = "shape-button";
-    button.dataset.shape = shape.id;
-    button.innerHTML = `<img src="${ASSET}/shape_icons/${iconByShape[shape.id]}" alt=""><span>${shape.label}</span>`;
-    button.addEventListener("click", () => {
-      state.selectedShape = shape.id;
-      clampCursorToSelectedShape();
-      updateUi();
-    });
-    elements.shapeList.append(button);
+    const option = document.createElement("option");
+    option.value = shape.id;
+    option.dataset.shape = shape.id;
+    option.textContent = shape.label;
+    elements.shapeList.append(option);
   }
 }
 
@@ -705,8 +690,8 @@ function resizeRenderer() {
 
 function updateCamera() {
   const center = new THREE.Vector3(
-    (state.project.workspaceCells.x * CELL_SIZE_MM) / 2,
-    (state.project.workspaceCells.y * CELL_SIZE_MM) / 2,
+    (state.project.workspaceCells.x * CELL_SIZE_MM) / 2 + state.cameraPan.x,
+    (state.project.workspaceCells.y * CELL_SIZE_MM) / 2 + state.cameraPan.y,
     Math.max(120, (state.project.workspaceCells.z * CELL_SIZE_MM) / 2) + state.cameraLift
   );
   const distance = Math.max(
@@ -798,8 +783,14 @@ function handlePointerMove(event) {
 function handleKeydown(event) {
   const key = event.key.toLowerCase();
   if (event.metaKey || event.ctrlKey) {
-    if (key === "z" && !event.shiftKey) return undo();
-    if ((key === "z" && event.shiftKey) || key === "y") return redo();
+    if (key === "z" && !event.shiftKey) {
+      event.preventDefault();
+      return undo();
+    }
+    if ((key === "z" && event.shiftKey) || key === "y") {
+      event.preventDefault();
+      return redo();
+    }
     if (key === "c") return copySelected();
     if (key === "v") return pasteCopied();
     if (key === "s") {
@@ -810,9 +801,10 @@ function handleKeydown(event) {
       event.preventDefault();
       return openProject();
     }
+    return;
   }
   if (isTextInputTarget(event.target)) return;
-  if (["w", "a", "s", "d", "q", "e"].includes(key)) {
+  if (["w", "a", "s", "d", "q", "e", "t", "f", "g", "h"].includes(key)) {
     state.pressedKeys.add(key);
   }
   if (event.key === "ArrowLeft") moveCursor(-1, 0, 0);
@@ -855,12 +847,17 @@ function updateHeldCameraControls() {
   const yawStep = 0.035;
   const pitchStep = 0.018;
   const liftStep = CELL_SIZE_MM * 0.22;
+  const panStep = CELL_SIZE_MM * 0.18;
   if (state.pressedKeys.has("a")) state.cameraAngle -= yawStep;
   if (state.pressedKeys.has("d")) state.cameraAngle += yawStep;
   if (state.pressedKeys.has("w")) state.cameraPitch = clamp(state.cameraPitch + pitchStep, 0.22, 1.4);
   if (state.pressedKeys.has("s")) state.cameraPitch = clamp(state.cameraPitch - pitchStep, 0.22, 1.4);
   if (state.pressedKeys.has("q")) state.cameraLift = clamp(state.cameraLift - liftStep, -1200, 1200);
   if (state.pressedKeys.has("e")) state.cameraLift = clamp(state.cameraLift + liftStep, -1200, 1200);
+  if (state.pressedKeys.has("f")) state.cameraPan.x = clamp(state.cameraPan.x - panStep, -3000, 3000);
+  if (state.pressedKeys.has("h")) state.cameraPan.x = clamp(state.cameraPan.x + panStep, -3000, 3000);
+  if (state.pressedKeys.has("g")) state.cameraPan.y = clamp(state.cameraPan.y - panStep, -3000, 3000);
+  if (state.pressedKeys.has("t")) state.cameraPan.y = clamp(state.cameraPan.y + panStep, -3000, 3000);
 }
 
 function updatePointer(event) {
@@ -915,6 +912,17 @@ function selectBlock(position) {
   updateCursorMesh();
   updateUi();
   renderProject();
+}
+
+function changeActiveMaterial() {
+  state.selectedMaterial = elements.materialList.value;
+  updateUi();
+}
+
+function changeActiveShape() {
+  state.selectedShape = elements.shapeList.value;
+  clampCursorToSelectedShape();
+  updateUi();
 }
 
 function clampCursorToSelectedShape() {
@@ -1125,6 +1133,8 @@ function updateUi() {
     ? `${MATERIALS[selectedBlock.material].label} / ${SHAPES[selectedBlock.shape].label} / ${selectedBlock.x},${selectedBlock.y},${selectedBlock.z}`
     : "尚未選取";
   elements.selectedMaterial.value = selectedBlock?.material || state.selectedMaterial;
+  elements.materialList.value = state.selectedMaterial;
+  elements.shapeList.value = state.selectedShape;
   elements.blockCount.textContent = `方塊 ${state.project.blocks.length} / ${MAX_BLOCKS}`;
   elements.cursorState.textContent = `游標：${state.cursor.x}, ${state.cursor.y}, ${state.cursor.z}`;
   elements.modeState.textContent = `滑鼠：${state.mouseMode === "select" ? "選取" : "放置"}　材質：${MATERIALS[state.selectedMaterial].label}　形狀：${SHAPES[state.selectedShape].label}　旋轉：${state.pendingRotation}°`;

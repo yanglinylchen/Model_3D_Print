@@ -14,8 +14,8 @@
         <button id="openProject" title="開啟 .m3dp">開啟</button>
         <button id="saveProject" title="儲存 .m3dp">儲存</button>
         <span class="divider"></span>
-        <button id="undo" class="icon-button" title="復原">↶</button>
-        <button id="redo" class="icon-button" title="重做">↷</button>
+        <button id="undo" class="icon-button" title="復原，快捷鍵 ⌘Z / Ctrl+Z">↶</button>
+        <button id="redo" class="icon-button" title="重做，快捷鍵 ⌘⇧Z / Ctrl+Y">↷</button>
         <div class="mode-toggle" aria-label="滑鼠模式">
           <button id="placeMode" title="滑鼠放置方塊">放置</button>
           <button id="selectMode" title="滑鼠選取方塊">選取</button>
@@ -31,11 +31,11 @@
       <aside class="left-panel">
         <section>
           <h2>材質</h2>
-          <div id="materialList" class="swatch-grid"></div>
+          <select id="materialList" class="picker-select" aria-label="選擇材質"></select>
         </section>
         <section>
           <h2>形狀</h2>
-          <div id="shapeList" class="shape-list"></div>
+          <select id="shapeList" class="picker-select" aria-label="選擇形狀"></select>
         </section>
         <section>
           <h2>完成範例</h2>

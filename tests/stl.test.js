@@ -133,6 +133,19 @@ test("rubble stone cube STL exports irregular side relief without top relief", (
 
   const exportedAgain = exportAsciiStl(placed.project);
   assert.equal(exported.stl, exportedAgain.stl, "rubble pattern should stay fixed after placement");
+
+  const brickProject = createProject({ name: "Rubble Compare" });
+  const brickPlaced = setBlock(brickProject, makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    material: "brick",
+    textureSeed: "rubble-test-seed"
+  }));
+  const brickExported = exportAsciiStl(brickPlaced.project, "same_name");
+  const rubbleExported = exportAsciiStl(placed.project, "same_name");
+  assert.notEqual(rubbleExported.triangleCount, brickExported.triangleCount, "rubble should not export the same relief as brick");
+  assert.ok(rubbleExported.triangleCount > brickExported.triangleCount, "rubble should use irregular polygon stones instead of brick cuboids");
 });
 
 test("cube next to triangular prism uses weld overlap instead of edge-only contact", () => {
@@ -432,6 +445,18 @@ test("rotated fence panel STL moves the 10mm thickness to another side", () => {
   assert.equal(Math.min(...vertices.map((vertex) => vertex.y)), 0);
   assert.equal(Math.max(...vertices.map((vertex) => vertex.y)), 50);
   assert.equal(Math.max(...vertices.map((vertex) => vertex.z)), 50);
+});
+
+test("adjacent fence panels weld slightly to avoid edge-only contact", () => {
+  let project = createProject({ name: "Adjacent Fence", workspaceCells: { x: 4, y: 4, z: 2 } });
+  project = setBlock(project, makeBlock({ x: 0, y: 0, z: 0, shape: "fence_panel", material: "plain" })).project;
+  project = setBlock(project, makeBlock({ x: 1, y: 0, z: 0, shape: "fence_panel", material: "plain" })).project;
+  const exported = exportAsciiStl(project);
+  assert.equal(exported.ok, true);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+  const vertices = verticesFromStl(exported.stl);
+  assert.ok(vertices.some((vertex) => vertex.x > 50 && vertex.x < 50.1), "first fence should overlap the second by a tiny weld");
+  assert.ok(vertices.some((vertex) => vertex.x < 50 && vertex.x > 49.9), "second fence should overlap the first by a tiny weld");
 });
 
 test("available materials export printable geometry", () => {

@@ -68,11 +68,12 @@ export function reliefTrianglesForBlock(project, block) {
   const triangles = [];
   for (const face of ["south", "east", "north", "west"]) {
     if (neighborAt(project, block, face)) continue;
-    const boxes = block.material === "rubble_stone"
-      ? rubbleStoneSideReliefBoxes(x, y, z, CELL_SIZE_MM, face, block.textureSeed || "")
-      : brickSideReliefBoxes(x, y, z, CELL_SIZE_MM, face, block.textureSeed || "");
-    for (const [min, max] of boxes) {
-      triangles.push(...cuboidTriangles(min, max));
+    if (block.material === "rubble_stone") {
+      triangles.push(...rubbleStoneSideReliefTriangles(x, y, z, CELL_SIZE_MM, face, block.textureSeed || ""));
+    } else {
+      for (const [min, max] of brickSideReliefBoxes(x, y, z, CELL_SIZE_MM, face, block.textureSeed || "")) {
+        triangles.push(...cuboidTriangles(min, max));
+      }
     }
   }
   return triangles;
@@ -95,7 +96,7 @@ export function trianglesForBlock(block, project = null) {
     return rotateTrianglesZ(windowCrossTriangles(x, y, z), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
   }
   if (block.shape === "fence_panel") {
-    return rotateTrianglesZ(fencePanelTriangles(x, y, z), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
+    return rotateTrianglesZ(fencePanelTriangles(x, y, z, block, project), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
   }
   if (block.shape === "door_panel") {
     return rotateTrianglesZ(doorPanelTriangles(x, y, z), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
@@ -183,8 +184,8 @@ function reliefBoxForFace(x, y, z, face, u0, u1, v0, v1) {
   return reliefBoxForFaceWithDepth(x, y, z, face, u0, u1, v0, v1, raise, embed);
 }
 
-function rubbleStoneSideReliefBoxes(x, y, z, size, face, seed) {
-  const boxes = [];
+function rubbleStoneSideReliefTriangles(x, y, z, size, face, seed) {
+  const triangles = [];
   const gap = RUBBLE_STONE_JOINT_GAP_MM;
   const rows = irregularBreaks(size, `${seed}:rubble:${face}:row`, 9, 16);
   for (let row = 0; row < rows.length - 1; row += 1) {
@@ -202,21 +203,19 @@ function rubbleStoneSideReliefBoxes(x, y, z, size, face, seed) {
       const v0 = rowTop + gap / 2;
       const v1 = rowBottom - gap / 2;
       if (u1 - u0 < 5 || v1 - v0 < 5) continue;
-      boxes.push(reliefBoxForFaceWithDepth(
+      const relief = 0.75 + seededUnit(`${rowSeed}:relief:${index}`) * 0.75;
+      triangles.push(...reliefPolygonForFace(
         x,
         y,
         z,
         face,
-        u0,
-        u1,
-        v0,
-        v1,
-        RUBBLE_STONE_RAISE_MM,
+        irregularStonePolygon(u0, u1, v0, v1, `${rowSeed}:shape:${index}`),
+        relief,
         RUBBLE_STONE_EMBED_MM
       ));
     }
   }
-  return boxes;
+  return triangles;
 }
 
 function irregularBreaks(size, seed, minStep, maxStep) {
@@ -247,6 +246,48 @@ function reliefBoxForFaceWithDepth(x, y, z, face, u0, u1, v0, v1, raise, embed) 
     return [[x + u0, y + CELL_SIZE_MM - embed, z + v0], [x + u1, y + CELL_SIZE_MM + raise, z + v1]];
   }
   return [[x + u0, y - raise, z + v0], [x + u1, y + embed, z + v1]];
+}
+
+function irregularStonePolygon(u0, u1, v0, v1, seed) {
+  const width = u1 - u0;
+  const height = v1 - v0;
+  const jitterU = Math.min(width * 0.16, 2.3);
+  const jitterV = Math.min(height * 0.16, 2.0);
+  const j = (name, amount) => (seededUnit(`${seed}:${name}`) - 0.5) * amount;
+  const midU = (u0 + u1) / 2 + j("mid-u", jitterU);
+  const midV = (v0 + v1) / 2 + j("mid-v", jitterV);
+  return [
+    [u0 + jitterU * 0.4 + Math.abs(j("a-u", jitterU)), v0 + jitterV * 0.4 + Math.abs(j("a-v", jitterV))],
+    [midU, v0 + Math.abs(j("b-v", jitterV))],
+    [u1 - jitterU * 0.4 - Math.abs(j("c-u", jitterU)), v0 + jitterV * 0.4 + Math.abs(j("c-v", jitterV))],
+    [u1 - Math.abs(j("d-u", jitterU)), midV],
+    [u1 - jitterU * 0.4 - Math.abs(j("e-u", jitterU)), v1 - jitterV * 0.4 - Math.abs(j("e-v", jitterV))],
+    [midU + j("f-u", jitterU), v1 - Math.abs(j("f-v", jitterV))],
+    [u0 + jitterU * 0.4 + Math.abs(j("g-u", jitterU)), v1 - jitterV * 0.4 - Math.abs(j("g-v", jitterV))],
+    [u0 + Math.abs(j("h-u", jitterU)), midV + j("h-v", jitterV)]
+  ];
+}
+
+function reliefPolygonForFace(x, y, z, face, points, raise, embed) {
+  const bottom = points.map(([u, v]) => pointForFace(x, y, z, face, u, v, -embed));
+  const top = points.map(([u, v]) => pointForFace(x, y, z, face, u, v, raise));
+  const triangles = [];
+  for (let index = 1; index < points.length - 1; index += 1) {
+    triangles.push([bottom[0], bottom[index + 1], bottom[index]]);
+    triangles.push([top[0], top[index], top[index + 1]]);
+  }
+  for (let index = 0; index < points.length; index += 1) {
+    const next = (index + 1) % points.length;
+    triangles.push(...facesToTriangles([[bottom[index], bottom[next], top[next], top[index]]]));
+  }
+  return triangles;
+}
+
+function pointForFace(x, y, z, face, u, v, offset) {
+  if (face === "east") return [x + CELL_SIZE_MM + offset, y + u, z + v];
+  if (face === "west") return [x - offset, y + u, z + v];
+  if (face === "north") return [x + u, y + CELL_SIZE_MM + offset, z + v];
+  return [x + u, y - offset, z + v];
 }
 
 function roofTileReliefTriangles(x, y, z, height, block) {
@@ -467,8 +508,11 @@ function windowCrossTriangles(x, y, z) {
   return triangles;
 }
 
-function fencePanelTriangles(x, y, z) {
-  const xSpans = [0, 7, 18, 22, 28, 32, 43, 50];
+function fencePanelTriangles(x, y, z, block, project) {
+  const rotation = block?.rotation || 0;
+  const weldWest = adjacentFence(project, block, rotatedFace("west", rotation)) ? PRISM_WELD_OVERLAP_MM : 0;
+  const weldEast = adjacentFence(project, block, rotatedFace("east", rotation)) ? PRISM_WELD_OVERLAP_MM : 0;
+  const xSpans = [-weldWest, 7, 18, 22, 28, 32, 43, 50 + weldEast];
   const zSpans = [0, 8, 15, 28, 35, 50];
   const occupied = [];
   for (let xi = 0; xi < xSpans.length - 1; xi += 1) {
@@ -482,6 +526,11 @@ function fencePanelTriangles(x, y, z) {
     }
   }
   return gridPanelTriangles(x, y, z, xSpans, zSpans, occupied, FENCE_THICKNESS_MM);
+}
+
+function adjacentFence(project, block, face) {
+  const neighbor = project && block ? neighborAt(project, block, face) : null;
+  return neighbor?.shape === "fence_panel" && (neighbor.rotation || 0) === (block.rotation || 0);
 }
 
 function gridPanelTriangles(x, y, z, xSpans, zSpans, occupied, thickness) {

@@ -154,14 +154,6 @@ h2 {
   font-size: 16px;
 }
 
-.swatch-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-.material-button,
-.shape-button,
 .example-button {
   display: grid;
   gap: 6px;
@@ -170,27 +162,18 @@ h2 {
   text-align: center;
 }
 
-.material-button img {
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: 8px;
-}
-
-.shape-list,
 .example-list {
   display: grid;
   gap: 8px;
 }
 
-.shape-button {
-  grid-template-columns: 36px 1fr;
-  align-items: center;
-  text-align: left;
-}
-
-.shape-button img {
-  width: 36px;
-  height: 36px;
+.picker-select {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid #bbc8c0;
+  border-radius: 7px;
+  padding: 6px 10px;
+  background: #f7faf8;
 }
 
 .selected {
