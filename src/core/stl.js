@@ -8,6 +8,9 @@ const BRICK_ROWS = 5;
 const RUBBLE_STONE_RAISE_MM = 1.2;
 const RUBBLE_STONE_EMBED_MM = 0.08;
 const RUBBLE_STONE_JOINT_GAP_MM = 1.5;
+const ROOF_TILE_RAISE_MM = 1.1;
+const ROOF_TILE_EMBED_MM = 0.08;
+const ROOF_TILE_GAP_MM = 1.3;
 const WINDOW_THICKNESS_MM = 10;
 const WINDOW_BAR_MM = 8;
 const FENCE_THICKNESS_MM = 10;
@@ -39,16 +42,25 @@ export function exportAsciiStl(project, name = project.name || "model_3d_print")
     repairNotes: [
       "已合併可安全處理的幾何資料",
       "已使用列印安全模式輸出閉合外殼",
-      "已將磚紋與亂石浮雕限制在外露側面，避免頂面干擾屋頂三角柱"
+      "已將牆面浮雕限制在外露側面，瓦片浮雕限制在三角柱斜面"
     ]
   };
 }
 
 export function reliefTrianglesForBlock(project, block) {
-  if (!project || !["brick", "rubble_stone"].includes(block.material)) return [];
+  if (!project || !["brick", "rubble_stone", "roof_tile"].includes(block.material)) return [];
   const x = block.x * CELL_SIZE_MM;
   const y = block.y * CELL_SIZE_MM;
   const z = block.z * CELL_SIZE_MM;
+  if (block.material === "roof_tile") {
+    if (block.shape === "prism_30") {
+      return roofTileReliefTriangles(x, y, z, Math.tan(Math.PI / 6) * CELL_SIZE_MM, block);
+    }
+    if (block.shape === "prism_45") {
+      return roofTileReliefTriangles(x, y, z, CELL_SIZE_MM, block);
+    }
+    return [];
+  }
   if (block.shape === "stair_step") {
     return block.material === "brick" ? stairReliefTriangles(project, block, x, y, z) : [];
   }
@@ -235,6 +247,74 @@ function reliefBoxForFaceWithDepth(x, y, z, face, u0, u1, v0, v1, raise, embed) 
     return [[x + u0, y + CELL_SIZE_MM - embed, z + v0], [x + u1, y + CELL_SIZE_MM + raise, z + v1]];
   }
   return [[x + u0, y - raise, z + v0], [x + u1, y + embed, z + v1]];
+}
+
+function roofTileReliefTriangles(x, y, z, height, block) {
+  const triangles = [];
+  const seed = block.textureSeed || "roof-tile";
+  const rowBreaks = [3, 11, 19, 27, 35, 43, 50];
+  const gap = ROOF_TILE_GAP_MM;
+  for (let row = 0; row < rowBreaks.length - 1; row += 1) {
+    const u0 = rowBreaks[row] + gap / 2;
+    const u1 = rowBreaks[row + 1] - gap / 2;
+    const phase = (row % 2 === 0) ? -8 : 0;
+    for (let v = phase; v < CELL_SIZE_MM; v += 17) {
+      const v0 = Math.max(0, v) + gap / 2;
+      const v1 = Math.min(CELL_SIZE_MM, v + 17) - gap / 2;
+      if (u1 - u0 < 4 || v1 - v0 < 5) continue;
+      const jitter = seededUnit(`${seed}:tile:${row}:${v}`) * 0.9;
+      triangles.push(...slopePlateTriangles(
+        x,
+        y,
+        z,
+        height,
+        u0 + jitter,
+        Math.min(u1, u1 + jitter),
+        v0,
+        v1
+      ));
+    }
+  }
+  return rotateTrianglesZ(triangles, [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
+}
+
+function slopePlateTriangles(x, y, z, height, u0, u1, v0, v1) {
+  const normal = normalizeVector([-height, 0, CELL_SIZE_MM]);
+  const top = (u, v) => offsetPoint(pointOnSlope(x, y, z, height, u, v), normal, ROOF_TILE_RAISE_MM);
+  const bottom = (u, v) => offsetPoint(pointOnSlope(x, y, z, height, u, v), normal, -ROOF_TILE_EMBED_MM);
+  const a = bottom(u0, v0);
+  const b = bottom(u1, v0);
+  const c = bottom(u1, v1);
+  const d = bottom(u0, v1);
+  const A = top(u0, v0);
+  const B = top(u1, v0);
+  const C = top(u1, v1);
+  const D = top(u0, v1);
+  return facesToTriangles([
+    [a, b, c, d],
+    [A, D, C, B],
+    [a, A, B, b],
+    [b, B, C, c],
+    [c, C, D, d],
+    [d, D, A, a]
+  ]);
+}
+
+function pointOnSlope(x, y, z, height, u, v) {
+  return [x + u, y + v, z + (height * u) / CELL_SIZE_MM];
+}
+
+function offsetPoint(point, vector, distance) {
+  return [
+    point[0] + vector[0] * distance,
+    point[1] + vector[1] * distance,
+    point[2] + vector[2] * distance
+  ];
+}
+
+function normalizeVector(vector) {
+  const length = Math.hypot(...vector) || 1;
+  return vector.map((value) => value / length);
 }
 
 function stairReliefTriangles(project, block, x, y, z) {

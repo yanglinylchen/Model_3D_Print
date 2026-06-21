@@ -169,6 +169,51 @@ test("brick triangular prisms export clean prism geometry without cube relief", 
   }
 });
 
+test("roof tile triangular prisms export printable relief only on the slope", () => {
+  for (const shape of ["prism_30", "prism_45"]) {
+    const project = createProject({ name: `${shape} Roof Tile` });
+    const placed = setBlock(project, makeBlock({
+      x: 0,
+      y: 0,
+      z: 0,
+      shape,
+      material: "roof_tile",
+      textureSeed: `${shape}-roof-tile`
+    }));
+    const exported = exportAsciiStl(placed.project);
+    assert.equal(exported.ok, true);
+    assert.ok(exported.triangleCount > 8, `${shape} should include roof tile relief plates`);
+    assert.deepEqual(nonManifoldEdges(exported.stl), []);
+
+    const plainProject = createProject({ name: `${shape} Plain` });
+    const plainPlaced = setBlock(plainProject, makeBlock({ x: 0, y: 0, z: 0, shape, material: "plain" }));
+    const plainVertices = verticesFromStl(exportAsciiStl(plainPlaced.project).stl);
+    const tileVertices = verticesFromStl(exported.stl);
+    const plainMaxZ = Math.max(...plainVertices.map((vertex) => vertex.z));
+    const tileMaxZ = Math.max(...tileVertices.map((vertex) => vertex.z));
+    assert.ok(tileMaxZ > plainMaxZ, `${shape} roof tiles should protrude above the slope`);
+    assert.ok(!tileVertices.some((vertex) => vertex.z < 0), `${shape} roof tiles should not protrude below the base`);
+
+    const exportedAgain = exportAsciiStl(placed.project);
+    assert.equal(exported.stl, exportedAgain.stl, "roof tile pattern should stay fixed after placement");
+  }
+});
+
+test("roof tile material does not add relief to regular cubes", () => {
+  const project = createProject({ name: "Roof Tile Cube" });
+  const placed = setBlock(project, makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    material: "roof_tile",
+    textureSeed: "roof-tile-cube"
+  }));
+  const exported = exportAsciiStl(placed.project);
+  assert.equal(exported.ok, true);
+  assert.equal(exported.triangleCount, 12);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+});
+
 test("rotated triangular prism STL follows block rotation", () => {
   const project = createProject({ name: "Rotated Prism" });
   const placed = setBlock(project, makeBlock({
@@ -390,7 +435,7 @@ test("rotated fence panel STL moves the 10mm thickness to another side", () => {
 });
 
 test("available materials export printable geometry", () => {
-  for (const material of ["brick", "rubble_stone", "plain"]) {
+  for (const material of ["brick", "rubble_stone", "roof_tile", "plain"]) {
     const project = createProject({ name: `${material} Relief` });
     const placed = setBlock(project, makeBlock({
       x: 0,

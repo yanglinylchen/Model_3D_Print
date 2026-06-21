@@ -19,6 +19,12 @@ export const MATERIALS = Object.freeze({
     color: "#8d8876",
     reliefDepthMm: 2.0
   },
+  roof_tile: {
+    id: "roof_tile",
+    label: "瓦片",
+    color: "#9d3f2f",
+    reliefDepthMm: 1.1
+  },
   plain: {
     id: "plain",
     label: "無材質",

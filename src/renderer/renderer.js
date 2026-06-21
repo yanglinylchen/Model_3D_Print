@@ -634,6 +634,29 @@ function createMaterialTexture(material, seed) {
     for (let i = 0; i < 18; i += 1) {
       line(context, rng() * 128, rng() * 128, rng() * 128, rng() * 128);
     }
+  } else if (material === "roof_tile") {
+    context.fillStyle = "#6f2d25";
+    context.fillRect(0, 0, 128, 128);
+    for (let row = -1; row < 8; row += 1) {
+      const y = row * 18 + 7;
+      const offset = row % 2 === 0 ? -18 : 0;
+      for (let x = offset; x < 128; x += 34) {
+        const shade = 130 + Math.floor(rng() * 34);
+        context.fillStyle = `rgb(${shade}, ${Math.max(45, shade - 54)}, ${Math.max(38, shade - 68)})`;
+        context.beginPath();
+        context.roundRect(x + 2, y, 30, 15, 5);
+        context.fill();
+        context.strokeStyle = "rgba(70, 20, 16, 0.7)";
+        context.lineWidth = 3;
+        context.stroke();
+      }
+      context.strokeStyle = "#3f1714";
+      context.lineWidth = 4;
+      line(context, 0, y + 15, 128, y + 15);
+    }
+    context.strokeStyle = "rgba(240, 151, 117, 0.55)";
+    context.lineWidth = 2;
+    for (let i = 0; i < 10; i += 1) line(context, rng() * 128, rng() * 128, rng() * 128, rng() * 128);
   } else {
     context.strokeStyle = "#aeb4ae";
     context.lineWidth = 4;

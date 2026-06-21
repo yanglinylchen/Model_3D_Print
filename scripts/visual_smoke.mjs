@@ -87,7 +87,7 @@ try {
   if (metrics.selectionInfo.includes("尚未選取")) {
     throw new Error(`Select mode did not select a block: ${JSON.stringify(metrics)}`);
   }
-  if (metrics.materialButtons !== 3) {
+  if (metrics.materialButtons !== 4) {
     throw new Error(`Material controls did not render all materials: ${JSON.stringify(metrics)}`);
   }
   if (metrics.shapeButtons !== 7) {

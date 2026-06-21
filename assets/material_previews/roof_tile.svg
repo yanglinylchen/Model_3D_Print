@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="瓦片材質">
+  <rect width="128" height="128" rx="12" fill="#6f2d25"/>
+  <g stroke="#421713" stroke-width="5" stroke-linejoin="round">
+    <path d="M0 23h128M0 43h128M0 63h128M0 83h128M0 103h128"/>
+  </g>
+  <g fill="#9d3f2f" stroke="#d06b50" stroke-width="2">
+    <rect x="-14" y="6" width="31" height="17" rx="6"/>
+    <rect x="20" y="6" width="31" height="17" rx="6"/>
+    <rect x="54" y="6" width="31" height="17" rx="6"/>
+    <rect x="88" y="6" width="31" height="17" rx="6"/>
+    <rect x="3" y="26" width="31" height="17" rx="6"/>
+    <rect x="37" y="26" width="31" height="17" rx="6"/>
+    <rect x="71" y="26" width="31" height="17" rx="6"/>
+    <rect x="105" y="26" width="31" height="17" rx="6"/>
+    <rect x="-14" y="46" width="31" height="17" rx="6"/>
+    <rect x="20" y="46" width="31" height="17" rx="6"/>
+    <rect x="54" y="46" width="31" height="17" rx="6"/>
+    <rect x="88" y="46" width="31" height="17" rx="6"/>
+    <rect x="3" y="66" width="31" height="17" rx="6"/>
+    <rect x="37" y="66" width="31" height="17" rx="6"/>
+    <rect x="71" y="66" width="31" height="17" rx="6"/>
+    <rect x="105" y="66" width="31" height="17" rx="6"/>
+    <rect x="-14" y="86" width="31" height="17" rx="6"/>
+    <rect x="20" y="86" width="31" height="17" rx="6"/>
+    <rect x="54" y="86" width="31" height="17" rx="6"/>
+    <rect x="88" y="86" width="31" height="17" rx="6"/>
+    <rect x="3" y="106" width="31" height="17" rx="6"/>
+    <rect x="37" y="106" width="31" height="17" rx="6"/>
+    <rect x="71" y="106" width="31" height="17" rx="6"/>
+    <rect x="105" y="106" width="31" height="17" rx="6"/>
+  </g>
+  <g stroke="#f2a080" stroke-width="2" opacity="0.45" stroke-linecap="round">
+    <path d="M25 14h17M60 14h14M77 74h15M43 114h16"/>
+  </g>
+</svg>
