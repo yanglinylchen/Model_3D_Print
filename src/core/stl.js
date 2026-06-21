@@ -1,3 +1,4 @@
+import { RoundedBoxGeometry } from "../../node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { CELL_SIZE_MM, MATERIALS, PRINT_DEFAULTS, SHAPES } from "./constants.js";
 
 export function exportAsciiStl(project, name = project.name || "model_3d_print") {
@@ -91,28 +92,8 @@ export function repairTriangles(triangles) {
 }
 
 function cubeTriangles(x, y, z, size, block) {
-  const relief = reliefOffset(block);
-  const min = [x, y, z];
-  const max = [x + size, y + size, z + size];
-  const inset = Math.min(PRINT_DEFAULTS.seamRecessDepthMm, size * 0.08);
-  const vertices = {
-    p000: [min[0] + inset, min[1] + inset, min[2] + inset],
-    p100: [max[0] - inset, min[1] + inset, min[2] + inset],
-    p110: [max[0] - inset, max[1] - inset, min[2] + inset],
-    p010: [min[0] + inset, max[1] - inset, min[2] + inset],
-    p001: [min[0] + inset, min[1] + inset, max[2] - inset + relief],
-    p101: [max[0] - inset, min[1] + inset, max[2] - inset + relief],
-    p111: [max[0] - inset, max[1] - inset, max[2] - inset + relief],
-    p011: [min[0] + inset, max[1] - inset, max[2] - inset + relief]
-  };
-  return facesToTriangles([
-    [vertices.p000, vertices.p100, vertices.p110, vertices.p010],
-    [vertices.p001, vertices.p011, vertices.p111, vertices.p101],
-    [vertices.p000, vertices.p001, vertices.p101, vertices.p100],
-    [vertices.p100, vertices.p101, vertices.p111, vertices.p110],
-    [vertices.p110, vertices.p111, vertices.p011, vertices.p010],
-    [vertices.p010, vertices.p011, vertices.p001, vertices.p000]
-  ]);
+  const geometry = new RoundedBoxGeometry(size, size, size, 5, PRINT_DEFAULTS.roundedEdgeRadiusMm);
+  return geometryToTriangles(geometry, [x + size / 2, y + size / 2, z + size / 2]);
 }
 
 function cuboidTriangles(min, max) {
@@ -198,13 +179,12 @@ function triangularPrismTriangles(x, y, z, height, block) {
   const size = CELL_SIZE_MM;
   const relief = reliefOffset(block);
   const h = Math.min(height + relief, size);
-  const inset = Math.min(PRINT_DEFAULTS.seamRecessDepthMm, size * 0.08);
-  const a = [x + inset, y + inset, z + inset];
-  const b = [x + size - inset, y + inset, z + inset];
-  const c = [x + size - inset, y + inset, z + h - inset];
-  const d = [x + inset, y + size - inset, z + inset];
-  const e = [x + size - inset, y + size - inset, z + inset];
-  const f = [x + size - inset, y + size - inset, z + h - inset];
+  const a = [x, y, z];
+  const b = [x + size, y, z];
+  const c = [x + size, y, z + h];
+  const d = [x, y + size, z];
+  const e = [x + size, y + size, z];
+  const f = [x + size, y + size, z + h];
   return [
     [a, b, c],
     [d, f, e],
@@ -214,6 +194,31 @@ function triangularPrismTriangles(x, y, z, height, block) {
       [c, f, d, a]
     ])
   ];
+}
+
+function geometryToTriangles(geometry, offset) {
+  const position = geometry.getAttribute("position");
+  const index = geometry.index;
+  const triangles = [];
+  const readVertex = (vertexIndex) => [
+    position.getX(vertexIndex) + offset[0],
+    position.getY(vertexIndex) + offset[1],
+    position.getZ(vertexIndex) + offset[2]
+  ];
+  if (index) {
+    for (let i = 0; i < index.count; i += 3) {
+      triangles.push([
+        readVertex(index.getX(i)),
+        readVertex(index.getX(i + 1)),
+        readVertex(index.getX(i + 2))
+      ]);
+    }
+  } else {
+    for (let i = 0; i < position.count; i += 3) {
+      triangles.push([readVertex(i), readVertex(i + 1), readVertex(i + 2)]);
+    }
+  }
+  return triangles;
 }
 
 function facesToTriangles(faces) {

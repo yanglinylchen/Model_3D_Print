@@ -47,6 +47,8 @@ const state = {
   lastExplicitSaveAt: 0,
   lastAutosaveAt: 0,
   cameraAngle: Math.PI / 4,
+  cameraPitch: 0.62,
+  pressedKeys: new Set(),
   warning: ""
 };
 state.history = new ProjectHistory(state.project);
@@ -91,6 +93,8 @@ const cursorMaterial = new THREE.MeshBasicMaterial({
 });
 const cursorMesh = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE_MM, CELL_SIZE_MM, CELL_SIZE_MM), cursorMaterial);
 scene.add(cursorMesh);
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
 
 init();
 
@@ -123,9 +127,11 @@ function bindControls() {
   document.getElementById("cameraLeft").addEventListener("click", () => rotateCamera(-0.2));
   document.getElementById("cameraRight").addEventListener("click", () => rotateCamera(0.2));
   elements.selectedMaterial.addEventListener("change", changeSelectedMaterial);
-  elements.canvas.addEventListener("click", placeOrSelectAtCursor);
+  elements.canvas.addEventListener("click", handleViewportClick);
+  elements.canvas.addEventListener("pointermove", handlePointerMove);
   window.addEventListener("resize", resizeRenderer);
   window.addEventListener("keydown", handleKeydown);
+  window.addEventListener("keyup", handleKeyup);
   elements.canvas.addEventListener("wheel", handleWheel, { passive: true });
 }
 
@@ -218,6 +224,7 @@ function renderProject() {
 function createBlockMesh(block) {
   const material = new THREE.MeshStandardMaterial({
     color: MATERIALS[block.material]?.color || "#b84b3f",
+    map: createMaterialTexture(block.material, block.textureSeed),
     roughness: 0.8,
     metalness: 0
   });
@@ -230,6 +237,7 @@ function createBlockMesh(block) {
   );
   mesh.rotation.z = THREE.MathUtils.degToRad(block.rotation || 0);
   mesh.userData.blockKey = `${block.x},${block.y},${block.z}`;
+  mesh.userData.position = { x: block.x, y: block.y, z: block.z };
   if (state.selected && samePosition(block, state.selected)) {
     const outline = new THREE.BoxHelper(mesh, "#16746d");
     mesh.add(outline);
@@ -265,6 +273,57 @@ function createGeometry(shape) {
   return new THREE.BoxGeometry(CELL_SIZE_MM, CELL_SIZE_MM, CELL_SIZE_MM);
 }
 
+function createMaterialTexture(material, seed) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 128;
+  canvas.height = 128;
+  const context = canvas.getContext("2d");
+  const base = MATERIALS[material]?.color || "#b84b3f";
+  context.fillStyle = base;
+  context.fillRect(0, 0, 128, 128);
+  const rng = seededRandom(seed || material);
+
+  if (material === "brick") {
+    context.strokeStyle = "#7f2f29";
+    context.lineWidth = 6;
+    for (const y of [38, 80]) line(context, 0, y, 128, y);
+    for (const [x, y1, y2] of [[64, 0, 38], [26, 38, 80], [88, 38, 80], [64, 80, 128]]) line(context, x, y1, x, y2);
+    context.strokeStyle = "#ef9c91";
+    context.lineWidth = 3;
+    for (let i = 0; i < 8; i += 1) line(context, 12 + rng() * 90, 16 + rng() * 92, 28 + rng() * 90, 16 + rng() * 92);
+  } else if (material === "wood") {
+    context.strokeStyle = "#6f421f";
+    context.lineWidth = 5;
+    for (let i = 0; i < 6; i += 1) {
+      const y = 18 + i * 18 + rng() * 5;
+      curve(context, 8, y, 46, y - 18 + rng() * 18, 120, y + rng() * 16);
+    }
+    context.strokeStyle = "#e0a15d";
+    context.lineWidth = 2;
+    curve(context, 12, 78, 54, 44, 118, 72);
+  } else if (material === "stone_slab") {
+    context.strokeStyle = "#646d6e";
+    context.lineWidth = 5;
+    for (let i = 0; i < 8; i += 1) line(context, rng() * 128, rng() * 128, rng() * 128, rng() * 128);
+    context.fillStyle = "rgba(255,255,255,0.22)";
+    for (let i = 0; i < 10; i += 1) context.fillRect(rng() * 120, rng() * 120, 5 + rng() * 12, 2 + rng() * 6);
+  } else {
+    context.strokeStyle = "#c9c2b8";
+    context.lineWidth = 5;
+    for (let i = 0; i < 6; i += 1) curve(context, 0, 20 + i * 18, 42, 5 + i * 18, 84, 24 + i * 18, 128, 10 + i * 18);
+    context.strokeStyle = "#fffaf1";
+    context.lineWidth = 3;
+    for (let i = 0; i < 4; i += 1) curve(context, 10, 30 + i * 22, 60, 8 + i * 22, 118, 30 + i * 22);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1, 1);
+  return texture;
+}
+
 function updateCursorMesh() {
   cursorMesh.position.set(
     state.cursor.x * CELL_SIZE_MM + CELL_SIZE_MM / 2,
@@ -275,6 +334,7 @@ function updateCursorMesh() {
 
 function tick() {
   resizeRenderer();
+  updateHeldCameraControls();
   updateCamera();
   renderer.render(scene, camera);
   requestAnimationFrame(tick);
@@ -297,11 +357,14 @@ function updateCamera() {
     (state.project.workspaceCells.y * CELL_SIZE_MM) / 2,
     Math.max(120, (state.project.workspaceCells.z * CELL_SIZE_MM) / 2)
   );
-  const distance = Math.max(state.project.workspaceCells.x, state.project.workspaceCells.y, state.project.workspaceCells.z) * CELL_SIZE_MM * 1.8;
+  const distance = Math.max(
+    520,
+    Math.max(state.project.workspaceCells.x, state.project.workspaceCells.y, state.project.workspaceCells.z) * CELL_SIZE_MM * 0.95
+  );
   camera.position.set(
     center.x + Math.cos(state.cameraAngle) * distance,
     center.y + Math.sin(state.cameraAngle) * distance,
-    center.z + distance * 0.62
+    center.z + distance * state.cameraPitch
   );
   camera.up.set(0, 0, 1);
   camera.lookAt(center);
@@ -333,6 +396,37 @@ function placeOrSelectAtCursor() {
   setWarning("");
 }
 
+function handleViewportClick(event) {
+  updatePointer(event);
+  raycaster.setFromCamera(pointer, camera);
+  const intersections = raycaster.intersectObjects(blockGroup.children, false);
+  if (intersections.length > 0) {
+    const position = intersections[0].object.userData.position;
+    if (position) {
+      state.selected = { ...position };
+      const block = getBlock(state.project, position);
+      state.selectedMaterial = block.material;
+      state.selectedShape = block.shape;
+      state.cursor = { ...position };
+      updateCursorMesh();
+      updateUi();
+      renderProject();
+      return;
+    }
+  }
+  if (projectPointerToCursor()) {
+    placeOrSelectAtCursor();
+  }
+}
+
+function handlePointerMove(event) {
+  updatePointer(event);
+  if (projectPointerToCursor()) {
+    updateCursorMesh();
+    updateUi();
+  }
+}
+
 function handleKeydown(event) {
   const key = event.key.toLowerCase();
   if (event.metaKey || event.ctrlKey) {
@@ -349,10 +443,9 @@ function handleKeydown(event) {
       return openProject();
     }
   }
-  if (key === "w") rotateCamera(0.12);
-  if (key === "a") rotateCamera(-0.12);
-  if (key === "s") rotateCamera(-0.12);
-  if (key === "d") rotateCamera(0.12);
+  if (["w", "a", "s", "d"].includes(key)) {
+    state.pressedKeys.add(key);
+  }
   if (event.key === "ArrowLeft") moveCursor(-1, 0, 0);
   if (event.key === "ArrowRight") moveCursor(1, 0, 0);
   if (event.key === "ArrowUp") moveCursor(0, 1, 0);
@@ -360,6 +453,10 @@ function handleKeydown(event) {
   if (event.key === "PageUp") moveCursor(0, 0, 1);
   if (event.key === "PageDown") moveCursor(0, 0, -1);
   if (event.key === "Delete" || event.key === "Backspace") eraseSelected();
+}
+
+function handleKeyup(event) {
+  state.pressedKeys.delete(event.key.toLowerCase());
 }
 
 function handleWheel(event) {
@@ -377,6 +474,36 @@ function moveCursor(dx, dy, dz) {
 
 function rotateCamera(delta) {
   state.cameraAngle += delta;
+}
+
+function updateHeldCameraControls() {
+  const yawStep = 0.035;
+  const pitchStep = 0.018;
+  if (state.pressedKeys.has("a")) state.cameraAngle -= yawStep;
+  if (state.pressedKeys.has("d")) state.cameraAngle += yawStep;
+  if (state.pressedKeys.has("w")) state.cameraPitch = clamp(state.cameraPitch + pitchStep, 0.22, 1.4);
+  if (state.pressedKeys.has("s")) state.cameraPitch = clamp(state.cameraPitch - pitchStep, 0.22, 1.4);
+}
+
+function updatePointer(event) {
+  const rect = elements.canvas.getBoundingClientRect();
+  pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+}
+
+function projectPointerToCursor() {
+  raycaster.setFromCamera(pointer, camera);
+  const z = state.cursor.z * CELL_SIZE_MM;
+  const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -z);
+  const hit = new THREE.Vector3();
+  if (!raycaster.ray.intersectPlane(plane, hit)) return false;
+  const next = {
+    x: clamp(Math.floor(hit.x / CELL_SIZE_MM), 0, state.project.workspaceCells.x - 1),
+    y: clamp(Math.floor(hit.y / CELL_SIZE_MM), 0, state.project.workspaceCells.y - 1),
+    z: state.cursor.z
+  };
+  state.cursor = next;
+  return true;
 }
 
 function commitProject(project) {
@@ -592,4 +719,31 @@ function samePosition(a, b) {
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
+}
+
+function seededRandom(seedText) {
+  let seed = 0;
+  for (const char of String(seedText)) seed = (seed * 31 + char.charCodeAt(0)) >>> 0;
+  return () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 0xffffffff;
+  };
+}
+
+function line(context, x1, y1, x2, y2) {
+  context.beginPath();
+  context.moveTo(x1, y1);
+  context.lineTo(x2, y2);
+  context.stroke();
+}
+
+function curve(context, ...points) {
+  context.beginPath();
+  context.moveTo(points[0], points[1]);
+  if (points.length === 6) {
+    context.quadraticCurveTo(points[2], points[3], points[4], points[5]);
+  } else {
+    context.bezierCurveTo(points[2], points[3], points[4], points[5], points[6], points[7]);
+  }
+  context.stroke();
 }

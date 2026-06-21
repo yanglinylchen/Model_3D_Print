@@ -14,6 +14,9 @@ try {
   const page = await app.firstWindow();
   await page.waitForSelector("#viewport", { timeout: 10_000 });
   await page.waitForTimeout(1500);
+  const viewport = await page.locator("#viewport").boundingBox();
+  await page.mouse.click(viewport.x + viewport.width / 2, viewport.y + viewport.height / 2);
+  await page.waitForTimeout(500);
   const metrics = await page.evaluate(() => {
     const canvas = document.querySelector("#viewport");
     const rect = canvas.getBoundingClientRect();
@@ -26,7 +29,8 @@ try {
       hasWebgl: Boolean(gl),
       nonZeroPixels: 0,
       colorSum: 0,
-      toolbarText: document.querySelector(".brand")?.textContent || ""
+      toolbarText: document.querySelector(".brand")?.textContent || "",
+      blockCountText: document.querySelector("#blockCount")?.textContent || ""
     };
     if (!gl) return sample;
     const pixels = new Uint8Array(4 * 80 * 80);
@@ -62,8 +66,10 @@ try {
   if (!metrics.toolbarText.includes("Model 3D Print")) {
     throw new Error("Toolbar brand text missing.");
   }
+  if (!metrics.blockCountText.includes("1 / 10000")) {
+    throw new Error(`Mouse placement did not add a block: ${metrics.blockCountText}`);
+  }
   console.log(JSON.stringify(metrics, null, 2));
 } finally {
   await app.close();
 }
-
