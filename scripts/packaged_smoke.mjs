@@ -92,10 +92,10 @@ try {
   if (!metrics.hasWebgl) {
     throw new Error("Packaged app canvas did not expose a WebGL context.");
   }
-  if (metrics.materialButtons !== 4) {
+  if (metrics.materialButtons !== 6) {
     throw new Error(`Material controls did not render: ${JSON.stringify(metrics)}`);
   }
-  if (metrics.shapeButtons !== 7) {
+  if (metrics.shapeButtons !== 12) {
     throw new Error(`Shape controls did not render all shapes: ${JSON.stringify(metrics)}`);
   }
   if (metrics.nonZeroPixels < 200 || metrics.colorSum === 0) {

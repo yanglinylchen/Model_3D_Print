@@ -135,6 +135,20 @@ test("fence panel occupies one regular grid cell", () => {
   assert.equal(placed.project.blocks.length, 1);
 });
 
+test("new scene objects occupy their expected grid cells", () => {
+  let project = createProject({ workspaceCells: { x: 5, y: 5, z: 5 } });
+  for (const shape of ["roof_corner", "chimney", "road", "river"]) {
+    const placed = setBlock(project, makeBlock({ x: project.blocks.length, y: 0, z: 0, shape, material: "plain" }));
+    assert.equal(placed.ok, true, `${shape} should be placeable`);
+    project = placed.project;
+  }
+
+  const arch = setBlock(project, makeBlock({ x: 0, y: 1, z: 1, shape: "archway", material: "plain" }));
+  assert.equal(arch.ok, true);
+  assert.equal(getBlock(arch.project, { x: 0, y: 1, z: 1 }).shape, "archway");
+  assert.equal(getBlock(arch.project, { x: 0, y: 1, z: 2 }).shape, "archway");
+});
+
 test("undo history retains only 50 steps", () => {
   let project = createProject({ workspaceCells: { x: 100, y: 1, z: 1 } });
   const history = new ProjectHistory(project);

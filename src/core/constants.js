@@ -25,6 +25,18 @@ export const MATERIALS = Object.freeze({
     color: "#9d3f2f",
     reliefDepthMm: 1.1
   },
+  metal_plate: {
+    id: "metal_plate",
+    label: "金屬板",
+    color: "#7f878c",
+    reliefDepthMm: 1.0
+  },
+  grid_tile: {
+    id: "grid_tile",
+    label: "格子磁磚",
+    color: "#cfd8dc",
+    reliefDepthMm: 0.8
+  },
   plain: {
     id: "plain",
     label: "無材質",
@@ -74,6 +86,34 @@ export const SHAPES = Object.freeze({
     maxHeightMm: CELL_SIZE_MM * 2,
     panelThicknessMm: 10,
     heightCells: 2
+  },
+  archway: {
+    id: "archway",
+    label: "拱門",
+    maxHeightMm: CELL_SIZE_MM * 2,
+    panelThicknessMm: 10,
+    heightCells: 2
+  },
+  roof_corner: {
+    id: "roof_corner",
+    label: "屋頂轉角",
+    maxHeightMm: CELL_SIZE_MM,
+    restrictedTop: true
+  },
+  chimney: {
+    id: "chimney",
+    label: "煙囪",
+    maxHeightMm: CELL_SIZE_MM
+  },
+  road: {
+    id: "road",
+    label: "道路",
+    maxHeightMm: 5
+  },
+  river: {
+    id: "river",
+    label: "河道",
+    maxHeightMm: 5
   }
 });
 

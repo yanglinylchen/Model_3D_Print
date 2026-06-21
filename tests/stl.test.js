@@ -148,6 +148,42 @@ test("rubble stone cube STL exports irregular side relief without top relief", (
   assert.ok(rubbleExported.triangleCount > brickExported.triangleCount, "rubble should use irregular polygon stones instead of brick cuboids");
 });
 
+test("metal plate cube STL exports rivet and panel relief", () => {
+  const project = createProject({ name: "Metal Plate" });
+  const placed = setBlock(project, makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    material: "metal_plate",
+    textureSeed: "metal-test-seed"
+  }));
+  const exported = exportAsciiStl(placed.project);
+  assert.equal(exported.ok, true);
+  assert.ok(exported.triangleCount > 12);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+  const vertices = verticesFromStl(exported.stl);
+  assert.ok(Math.max(...vertices.map((vertex) => vertex.z)) > 50, "metal rivets should appear on exposed top faces");
+  assert.ok(Math.min(...vertices.map((vertex) => vertex.x)) < 0 || Math.max(...vertices.map((vertex) => vertex.y)) > 50, "metal relief should appear on exposed side faces");
+});
+
+test("grid tile cube STL exports square tile relief", () => {
+  const project = createProject({ name: "Grid Tile" });
+  const placed = setBlock(project, makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    material: "grid_tile",
+    textureSeed: "grid-test-seed"
+  }));
+  const exported = exportAsciiStl(placed.project);
+  assert.equal(exported.ok, true);
+  assert.ok(exported.triangleCount > 12);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+  const vertices = verticesFromStl(exported.stl);
+  assert.ok(Math.max(...vertices.map((vertex) => vertex.z)) > 50, "grid tiles should appear on exposed top faces");
+  assert.ok(Math.min(...vertices.map((vertex) => vertex.x)) < 0 || Math.max(...vertices.map((vertex) => vertex.y)) > 50, "grid tiles should appear on exposed side faces");
+});
+
 test("cube next to triangular prism uses weld overlap instead of edge-only contact", () => {
   let project = createProject({ name: "Side Roof", workspaceCells: { x: 4, y: 4, z: 4 } });
   project = setBlock(project, makeBlock({ x: 0, y: 0, z: 1, material: "brick" })).project;
@@ -497,8 +533,39 @@ test("adjacent fence panels weld slightly to avoid edge-only contact", () => {
   assert.ok(vertices.some((vertex) => vertex.x < 50 && vertex.x > 49.9), "second fence should overlap the first by a tiny weld");
 });
 
+test("archway STL is a two-cell hollow panel", () => {
+  const project = createProject({ name: "Archway", workspaceCells: { x: 3, y: 3, z: 3 } });
+  const placed = setBlock(project, makeBlock({ x: 0, y: 0, z: 0, shape: "archway", material: "plain" }));
+  const exported = exportAsciiStl(placed.project);
+  assert.equal(exported.ok, true);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+  const vertices = verticesFromStl(exported.stl);
+  assert.equal(Math.max(...vertices.map((vertex) => vertex.z)), 100);
+  assert.equal(Math.max(...vertices.map((vertex) => vertex.y)), 10);
+  const triangles = trianglesFromStl(exported.stl);
+  assert.equal(coversPointInXz(triangles, 25, 30), false, "archway opening should stay hollow");
+  assert.equal(coversPointInXz(triangles, 4, 30), true, "archway side post should be solid");
+});
+
+test("new scene object STLs are closed and fit their cells", () => {
+  for (const shape of ["roof_corner", "chimney", "road", "river"]) {
+    const project = createProject({ name: shape });
+    const placed = setBlock(project, makeBlock({ x: 0, y: 0, z: 0, shape, material: "plain" }));
+    const exported = exportAsciiStl(placed.project);
+    assert.equal(exported.ok, true, `${shape} should export`);
+    assert.deepEqual(nonManifoldEdges(exported.stl), [], `${shape} should be manifold`);
+    const vertices = verticesFromStl(exported.stl);
+    assert.equal(Math.min(...vertices.map((vertex) => vertex.x)), 0, `${shape} min x`);
+    assert.equal(Math.max(...vertices.map((vertex) => vertex.x)), 50, `${shape} max x`);
+    assert.equal(Math.min(...vertices.map((vertex) => vertex.y)), 0, `${shape} min y`);
+    assert.equal(Math.max(...vertices.map((vertex) => vertex.y)), 50, `${shape} max y`);
+    assert.equal(Math.min(...vertices.map((vertex) => vertex.z)), 0, `${shape} min z`);
+    assert.ok(Math.max(...vertices.map((vertex) => vertex.z)) <= 50, `${shape} should fit one cell high`);
+  }
+});
+
 test("available materials export printable geometry", () => {
-  for (const material of ["brick", "rubble_stone", "roof_tile", "plain"]) {
+  for (const material of ["brick", "rubble_stone", "roof_tile", "metal_plate", "grid_tile", "plain"]) {
     const project = createProject({ name: `${material} Relief` });
     const placed = setBlock(project, makeBlock({
       x: 0,

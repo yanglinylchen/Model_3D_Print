@@ -34,6 +34,8 @@ const DOOR_THICKNESS_MM = 10;
 const DOOR_BACK_RECESS_MM = 2;
 const DOOR_RAIL_MM = 7;
 const DOOR_MID_RAIL_MM = 8;
+const ROAD_THICKNESS_MM = 5;
+const RIVER_THICKNESS_MM = 4;
 const EXAMPLES = [
   { label: "小房子", path: `${ASSET}/examples/small_house.m3dp` },
   { label: "石橋", path: `${ASSET}/examples/stone_bridge.m3dp` },
@@ -226,8 +228,8 @@ function renderProject() {
 
 function createBlockMesh(block) {
   const material = new THREE.MeshStandardMaterial({
-    color: block.shape === "fence_panel" ? "#d8dad6" : (MATERIALS[block.material]?.color || "#b84b3f"),
-    map: block.shape === "fence_panel" ? null : createMaterialTexture(block.material, block.textureSeed),
+    color: fixedShapeColor(block.shape) || (MATERIALS[block.material]?.color || "#b84b3f"),
+    map: fixedShapeColor(block.shape) ? null : createMaterialTexture(block.material, block.textureSeed),
     roughness: 0.8,
     metalness: 0
   });
@@ -251,6 +253,21 @@ function createBlockMesh(block) {
 function createGeometry(shape) {
   if (shape === "stair_step") {
     return createStairStepGeometry();
+  }
+  if (shape === "archway") {
+    return createArchwayGeometry();
+  }
+  if (shape === "roof_corner") {
+    return createRoofCornerGeometry();
+  }
+  if (shape === "chimney") {
+    return createChimneyGeometry();
+  }
+  if (shape === "road") {
+    return createSlabGeometry(ROAD_THICKNESS_MM);
+  }
+  if (shape === "river") {
+    return createSlabGeometry(RIVER_THICKNESS_MM);
   }
   if (shape === "window_cross") {
     return createWindowCrossGeometry();
@@ -286,6 +303,85 @@ function createGeometry(shape) {
     return geometry;
   }
   return new THREE.BoxGeometry(CELL_SIZE_MM, CELL_SIZE_MM, CELL_SIZE_MM);
+}
+
+function fixedShapeColor(shape) {
+  if (shape === "fence_panel") return "#d8dad6";
+  if (shape === "road") return "#3b3d3f";
+  if (shape === "river") return "#2f8fb6";
+  return null;
+}
+
+function createArchwayGeometry() {
+  const xSpans = [0, 8, 16, 24, 26, 34, 42, 50];
+  const zSpans = [0, 8, 42, 54, 64, 76, 88, 100];
+  const occupied = [];
+  for (let xi = 0; xi < xSpans.length - 1; xi += 1) {
+    occupied[xi] = [];
+    for (let zi = 0; zi < zSpans.length - 1; zi += 1) {
+      const x0 = xSpans[xi];
+      const x1 = xSpans[xi + 1];
+      const z0 = zSpans[zi];
+      const z1 = zSpans[zi + 1];
+      const sidePost = (x0 < 8 || x1 > 42) && z0 < 64;
+      const lintel = z0 >= 88;
+      const cx = (x0 + x1) / 2;
+      const cz = (z0 + z1) / 2;
+      const dx = Math.abs(cx - 25);
+      const dz = cz - 62;
+      const archRing = cz >= 54 && dz >= 0 && Math.hypot(dx, dz) >= 18 && Math.hypot(dx, dz) <= 30;
+      occupied[xi][zi] = sidePost || lintel || archRing;
+    }
+  }
+  return createGridPanelGeometry(xSpans, zSpans, occupied, DOOR_THICKNESS_MM);
+}
+
+function createRoofCornerGeometry() {
+  const s = CELL_SIZE_MM;
+  const z0 = -s / 2;
+  const a = [-s / 2, -s / 2, z0];
+  const b = [s / 2, -s / 2, z0];
+  const c = [-s / 2, s / 2, z0];
+  const d = [s / 2, s / 2, z0];
+  const e = [s / 2, -s / 2, z0 + s];
+  const f = [-s / 2, s / 2, z0 + s];
+  const g = [s / 2, s / 2, z0 + s];
+  const positions = [];
+  const indices = [];
+  for (const face of [
+    [a, b, d, c],
+    [a, e, b],
+    [a, c, f],
+    [b, e, g, d],
+    [c, d, g, f],
+    [a, g, e],
+    [a, f, g]
+  ]) {
+    appendAnyFace(positions, indices, face);
+  }
+  return bufferGeometry(positions, indices);
+}
+
+function createChimneyGeometry() {
+  const spans = [0, 10, 40, 50];
+  const occupied = [];
+  for (let xi = 0; xi < spans.length - 1; xi += 1) {
+    occupied[xi] = [];
+    for (let yi = 0; yi < spans.length - 1; yi += 1) {
+      const x0 = spans[xi];
+      const x1 = spans[xi + 1];
+      const y0 = spans[yi];
+      const y1 = spans[yi + 1];
+      occupied[xi][yi] = x0 < 10 || x1 > 40 || y0 < 10 || y1 > 40;
+    }
+  }
+  return createGridColumnGeometry(spans, spans, occupied, CELL_SIZE_MM);
+}
+
+function createSlabGeometry(thickness) {
+  const geometry = new THREE.BoxGeometry(CELL_SIZE_MM, CELL_SIZE_MM, thickness);
+  geometry.translate(0, 0, -CELL_SIZE_MM / 2 + thickness / 2);
+  return geometry;
 }
 
 function createFencePanelGeometry() {
@@ -571,6 +667,58 @@ function appendFace(positions, indices, a, b, c, d) {
   indices.push(start, start + 1, start + 2, start, start + 2, start + 3);
 }
 
+function appendAnyFace(positions, indices, face) {
+  const start = positions.length / 3;
+  for (const point of face) positions.push(...point);
+  if (face.length === 3) {
+    indices.push(start, start + 1, start + 2);
+  } else {
+    indices.push(start, start + 1, start + 2, start, start + 2, start + 3);
+  }
+}
+
+function bufferGeometry(positions, indices) {
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function createGridColumnGeometry(xSpans, ySpans, occupied, height) {
+  const s = CELL_SIZE_MM;
+  const positions = [];
+  const indices = [];
+  const z0 = -s / 2;
+  const z1 = z0 + height;
+  for (let xi = 0; xi < xSpans.length - 1; xi += 1) {
+    for (let yi = 0; yi < ySpans.length - 1; yi += 1) {
+      if (!occupied[xi][yi]) continue;
+      const x0 = -s / 2 + xSpans[xi];
+      const x1 = -s / 2 + xSpans[xi + 1];
+      const y0 = -s / 2 + ySpans[yi];
+      const y1 = -s / 2 + ySpans[yi + 1];
+      const vertices = {
+        p000: [x0, y0, z0],
+        p100: [x1, y0, z0],
+        p110: [x1, y1, z0],
+        p010: [x0, y1, z0],
+        p001: [x0, y0, z1],
+        p101: [x1, y0, z1],
+        p111: [x1, y1, z1],
+        p011: [x0, y1, z1]
+      };
+      appendFace(positions, indices, vertices.p000, vertices.p100, vertices.p110, vertices.p010);
+      appendFace(positions, indices, vertices.p001, vertices.p011, vertices.p111, vertices.p101);
+      if (!occupied[xi - 1]?.[yi]) appendFace(positions, indices, vertices.p000, vertices.p010, vertices.p011, vertices.p001);
+      if (!occupied[xi + 1]?.[yi]) appendFace(positions, indices, vertices.p100, vertices.p101, vertices.p111, vertices.p110);
+      if (!occupied[xi]?.[yi - 1]) appendFace(positions, indices, vertices.p000, vertices.p001, vertices.p101, vertices.p100);
+      if (!occupied[xi]?.[yi + 1]) appendFace(positions, indices, vertices.p110, vertices.p111, vertices.p011, vertices.p010);
+    }
+  }
+  return bufferGeometry(positions, indices);
+}
+
 function createMaterialTexture(material, seed) {
   const canvas = document.createElement("canvas");
   canvas.width = 128;
@@ -642,6 +790,39 @@ function createMaterialTexture(material, seed) {
     context.strokeStyle = "rgba(240, 151, 117, 0.55)";
     context.lineWidth = 2;
     for (let i = 0; i < 10; i += 1) line(context, rng() * 128, rng() * 128, rng() * 128, rng() * 128);
+  } else if (material === "metal_plate") {
+    context.fillStyle = "#70787d";
+    context.fillRect(0, 0, 128, 128);
+    context.strokeStyle = "#3e474c";
+    context.lineWidth = 5;
+    context.strokeRect(10, 10, 108, 108);
+    line(context, 64, 10, 64, 118);
+    context.fillStyle = "#aeb6ba";
+    for (const [x, y] of [[22, 22], [106, 22], [22, 106], [106, 106], [64, 64]]) {
+      context.beginPath();
+      context.arc(x, y, 6, 0, Math.PI * 2);
+      context.fill();
+      context.strokeStyle = "#4c555a";
+      context.lineWidth = 2;
+      context.stroke();
+    }
+    context.strokeStyle = "rgba(232, 238, 240, 0.35)";
+    context.lineWidth = 2;
+    for (let i = 0; i < 8; i += 1) line(context, rng() * 128, rng() * 128, rng() * 128, rng() * 128);
+  } else if (material === "grid_tile") {
+    context.fillStyle = "#eef3f4";
+    context.fillRect(0, 0, 128, 128);
+    context.strokeStyle = "#889aa0";
+    context.lineWidth = 5;
+    for (const value of [32, 64, 96]) {
+      line(context, value, 0, value, 128);
+      line(context, 0, value, 128, value);
+    }
+    context.strokeStyle = "#ffffff";
+    context.lineWidth = 2;
+    for (const value of [16, 48, 80, 112]) {
+      line(context, value - 8, value, value + 8, value);
+    }
   } else {
     context.strokeStyle = "#aeb4ae";
     context.lineWidth = 4;

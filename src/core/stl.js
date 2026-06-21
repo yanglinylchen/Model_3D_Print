@@ -11,6 +11,12 @@ const RUBBLE_STONE_JOINT_GAP_MM = 1.5;
 const ROOF_TILE_RAISE_MM = 1.1;
 const ROOF_TILE_EMBED_MM = 0.08;
 const ROOF_TILE_GAP_MM = 1.3;
+const METAL_PLATE_RAISE_MM = 0.9;
+const METAL_PLATE_EMBED_MM = 0.08;
+const GRID_TILE_RAISE_MM = 0.75;
+const GRID_TILE_EMBED_MM = 0.08;
+const ROAD_THICKNESS_MM = 5;
+const RIVER_THICKNESS_MM = 4;
 const WINDOW_THICKNESS_MM = 10;
 const WINDOW_BAR_MM = 8;
 const FENCE_THICKNESS_MM = 10;
@@ -48,7 +54,7 @@ export function exportAsciiStl(project, name = project.name || "model_3d_print")
 }
 
 export function reliefTrianglesForBlock(project, block) {
-  if (!project || !["brick", "rubble_stone", "roof_tile"].includes(block.material)) return [];
+  if (!project || !["brick", "rubble_stone", "roof_tile", "metal_plate", "grid_tile"].includes(block.material)) return [];
   const x = block.x * CELL_SIZE_MM;
   const y = block.y * CELL_SIZE_MM;
   const z = block.z * CELL_SIZE_MM;
@@ -72,11 +78,19 @@ export function reliefTrianglesForBlock(project, block) {
     if (neighborAt(project, block, face)) continue;
     if (block.material === "rubble_stone") {
       triangles.push(...rubbleStoneSideReliefTriangles(x, y, z, CELL_SIZE_MM, face, block.textureSeed || ""));
+    } else if (block.material === "metal_plate") {
+      triangles.push(...metalPlateReliefTriangles(x, y, z, face));
+    } else if (block.material === "grid_tile") {
+      triangles.push(...gridTileReliefTriangles(x, y, z, face));
     } else {
       for (const [min, max] of brickSideReliefBoxes(x, y, z, CELL_SIZE_MM, face, block.textureSeed || "")) {
         triangles.push(...cuboidTriangles(min, max));
       }
     }
+  }
+  if (!neighborAt(project, block, "top")) {
+    if (block.material === "metal_plate") triangles.push(...metalPlateTopReliefTriangles(x, y, z));
+    if (block.material === "grid_tile") triangles.push(...gridTileTopReliefTriangles(x, y, z));
   }
   return triangles;
 }
@@ -102,6 +116,21 @@ export function trianglesForBlock(block, project = null) {
   }
   if (block.shape === "door_panel") {
     return rotateTrianglesZ(doorPanelTriangles(x, y, z), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
+  }
+  if (block.shape === "archway") {
+    return rotateTrianglesZ(archwayTriangles(x, y, z), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
+  }
+  if (block.shape === "roof_corner") {
+    return rotateTrianglesZ(roofCornerTriangles(x, y, z), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
+  }
+  if (block.shape === "chimney") {
+    return rotateTrianglesZ(chimneyTriangles(x, y, z), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
+  }
+  if (block.shape === "road") {
+    return rotateTrianglesZ(roadTriangles(x, y, z), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
+  }
+  if (block.shape === "river") {
+    return rotateTrianglesZ(riverTriangles(x, y, z), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
   }
   return cubeTriangles(x, y, z, CELL_SIZE_MM, block, project);
 }
@@ -290,6 +319,90 @@ function pointForFace(x, y, z, face, u, v, offset) {
   if (face === "west") return [x - offset, y + u, z + v];
   if (face === "north") return [x + u, y + CELL_SIZE_MM + offset, z + v];
   return [x + u, y - offset, z + v];
+}
+
+function metalPlateReliefTriangles(x, y, z, face) {
+  const triangles = [];
+  const rivet = 3.2;
+  const lines = [
+    [24, 26, 6, 20],
+    [24, 26, 30, 44],
+    [6, 20, 24, 26],
+    [30, 44, 24, 26]
+  ];
+  for (const [u0, u1, v0, v1] of lines) {
+    triangles.push(...cuboidTriangles(...reliefBoxForFaceWithDepth(x, y, z, face, u0, u1, v0, v1, METAL_PLATE_RAISE_MM, METAL_PLATE_EMBED_MM)));
+  }
+  for (const [u, v] of [[9, 9], [41, 9], [9, 41], [41, 41]]) {
+    triangles.push(...cuboidTriangles(...reliefBoxForFaceWithDepth(
+      x,
+      y,
+      z,
+      face,
+      u - rivet / 2,
+      u + rivet / 2,
+      v - rivet / 2,
+      v + rivet / 2,
+      METAL_PLATE_RAISE_MM * 1.25,
+      METAL_PLATE_EMBED_MM
+    )));
+  }
+  return triangles;
+}
+
+function metalPlateTopReliefTriangles(x, y, z) {
+  const triangles = [];
+  const rivet = 3.2;
+  for (const [u0, u1, v0, v1] of [
+    [24, 26, 6, 20],
+    [24, 26, 30, 44],
+    [6, 20, 24, 26],
+    [30, 44, 24, 26]
+  ]) {
+    triangles.push(...cuboidTriangles([x + u0, y + v0, z + CELL_SIZE_MM - METAL_PLATE_EMBED_MM], [x + u1, y + v1, z + CELL_SIZE_MM + METAL_PLATE_RAISE_MM]));
+  }
+  for (const [u, v] of [[9, 9], [41, 9], [9, 41], [41, 41]]) {
+    triangles.push(...cuboidTriangles(
+      [x + u - rivet / 2, y + v - rivet / 2, z + CELL_SIZE_MM - METAL_PLATE_EMBED_MM],
+      [x + u + rivet / 2, y + v + rivet / 2, z + CELL_SIZE_MM + METAL_PLATE_RAISE_MM * 1.25]
+    ));
+  }
+  return triangles;
+}
+
+function gridTileReliefTriangles(x, y, z, face) {
+  const triangles = [];
+  const gap = 1.4;
+  const tile = CELL_SIZE_MM / 4;
+  for (let row = 0; row < 4; row += 1) {
+    for (let col = 0; col < 4; col += 1) {
+      const u0 = col * tile + gap / 2;
+      const u1 = (col + 1) * tile - gap / 2;
+      const v0 = row * tile + gap / 2;
+      const v1 = (row + 1) * tile - gap / 2;
+      triangles.push(...cuboidTriangles(...reliefBoxForFaceWithDepth(x, y, z, face, u0, u1, v0, v1, GRID_TILE_RAISE_MM, GRID_TILE_EMBED_MM)));
+    }
+  }
+  return triangles;
+}
+
+function gridTileTopReliefTriangles(x, y, z) {
+  const triangles = [];
+  const gap = 1.4;
+  const tile = CELL_SIZE_MM / 4;
+  for (let row = 0; row < 4; row += 1) {
+    for (let col = 0; col < 4; col += 1) {
+      const u0 = col * tile + gap / 2;
+      const u1 = (col + 1) * tile - gap / 2;
+      const v0 = row * tile + gap / 2;
+      const v1 = (row + 1) * tile - gap / 2;
+      triangles.push(...cuboidTriangles(
+        [x + u0, y + v0, z + CELL_SIZE_MM - GRID_TILE_EMBED_MM],
+        [x + u1, y + v1, z + CELL_SIZE_MM + GRID_TILE_RAISE_MM]
+      ));
+    }
+  }
+  return triangles;
 }
 
 function roofTileReliefTriangles(x, y, z, height, block) {
@@ -612,6 +725,119 @@ function gridPanelTriangles(x, y, z, xSpans, zSpans, occupied, thickness) {
       if (!occupied[xi + 1]?.[zi]) faces.push([vertices.p100, vertices.p101, vertices.p111, vertices.p110]);
       if (!occupied[xi]?.[zi - 1]) faces.push([vertices.p000, vertices.p100, vertices.p110, vertices.p010]);
       if (!occupied[xi]?.[zi + 1]) faces.push([vertices.p001, vertices.p011, vertices.p111, vertices.p101]);
+      triangles.push(...facesToTriangles(faces));
+    }
+  }
+  return triangles;
+}
+
+function archwayTriangles(x, y, z) {
+  const xSpans = [0, 8, 16, 24, 26, 34, 42, 50];
+  const zSpans = [0, 8, 42, 54, 64, 76, 88, 100];
+  const occupied = [];
+  for (let xi = 0; xi < xSpans.length - 1; xi += 1) {
+    occupied[xi] = [];
+    for (let zi = 0; zi < zSpans.length - 1; zi += 1) {
+      const x0 = xSpans[xi];
+      const x1 = xSpans[xi + 1];
+      const z0 = zSpans[zi];
+      const z1 = zSpans[zi + 1];
+      const sidePost = (x0 < 8 || x1 > 42) && z0 < 64;
+      const lintel = z0 >= 88;
+      const cx = (x0 + x1) / 2;
+      const cz = (z0 + z1) / 2;
+      const dx = Math.abs(cx - 25);
+      const dz = cz - 62;
+      const archRing = cz >= 54 && dz >= 0 && Math.hypot(dx, dz) >= 18 && Math.hypot(dx, dz) <= 30;
+      occupied[xi][zi] = sidePost || lintel || archRing;
+    }
+  }
+  return gridPanelTriangles(x, y, z, xSpans, zSpans, occupied, DOOR_THICKNESS_MM);
+}
+
+function roofCornerTriangles(x, y, z) {
+  const s = CELL_SIZE_MM;
+  const a = [x, y, z];
+  const b = [x + s, y, z];
+  const c = [x, y + s, z];
+  const d = [x + s, y + s, z];
+  const e = [x + s, y, z + s];
+  const f = [x, y + s, z + s];
+  const g = [x + s, y + s, z + s];
+  return facesToTriangles([
+    [a, b, d, c],
+    [a, e, b],
+    [a, c, f],
+    [b, e, g, d],
+    [c, d, g, f],
+    [a, g, e],
+    [a, f, g]
+  ]);
+}
+
+function chimneyTriangles(x, y, z) {
+  const spans = [0, 10, 40, 50];
+  const occupied = [];
+  for (let xi = 0; xi < spans.length - 1; xi += 1) {
+    occupied[xi] = [];
+    for (let yi = 0; yi < spans.length - 1; yi += 1) {
+      const x0 = spans[xi];
+      const x1 = spans[xi + 1];
+      const y0 = spans[yi];
+      const y1 = spans[yi + 1];
+      occupied[xi][yi] = x0 < 10 || x1 > 40 || y0 < 10 || y1 > 40;
+    }
+  }
+  return gridColumnTriangles(x, y, z, spans, spans, occupied, CELL_SIZE_MM);
+}
+
+function roadTriangles(x, y, z) {
+  const triangles = cuboidTriangles([x, y, z], [x + CELL_SIZE_MM, y + CELL_SIZE_MM, z + ROAD_THICKNESS_MM]);
+  triangles.push(...cuboidTriangles([x + 23, y + 5, z + ROAD_THICKNESS_MM - 0.08], [x + 27, y + 18, z + ROAD_THICKNESS_MM + 0.8]));
+  triangles.push(...cuboidTriangles([x + 23, y + 32, z + ROAD_THICKNESS_MM - 0.08], [x + 27, y + 45, z + ROAD_THICKNESS_MM + 0.8]));
+  return triangles;
+}
+
+function riverTriangles(x, y, z) {
+  const triangles = cuboidTriangles([x, y, z], [x + CELL_SIZE_MM, y + CELL_SIZE_MM, z + RIVER_THICKNESS_MM]);
+  for (const y0 of [8, 22, 36]) {
+    triangles.push(...cuboidTriangles(
+      [x + 6, y + y0, z + RIVER_THICKNESS_MM - 0.08],
+      [x + 44, y + y0 + 2, z + RIVER_THICKNESS_MM + 0.7]
+    ));
+  }
+  return triangles;
+}
+
+function gridColumnTriangles(x, y, z, xSpans, ySpans, occupied, height) {
+  const triangles = [];
+  const z0 = z;
+  const z1 = z + height;
+  for (let xi = 0; xi < xSpans.length - 1; xi += 1) {
+    for (let yi = 0; yi < ySpans.length - 1; yi += 1) {
+      if (!occupied[xi][yi]) continue;
+      const x0 = x + xSpans[xi];
+      const x1 = x + xSpans[xi + 1];
+      const y0 = y + ySpans[yi];
+      const y1 = y + ySpans[yi + 1];
+      const vertices = {
+        p000: [x0, y0, z0],
+        p100: [x1, y0, z0],
+        p110: [x1, y1, z0],
+        p010: [x0, y1, z0],
+        p001: [x0, y0, z1],
+        p101: [x1, y0, z1],
+        p111: [x1, y1, z1],
+        p011: [x0, y1, z1]
+      };
+      const faces = [
+        [vertices.p000, vertices.p100, vertices.p110, vertices.p010],
+        [vertices.p001, vertices.p011, vertices.p111, vertices.p101]
+      ];
+      if (!occupied[xi - 1]?.[yi]) faces.push([vertices.p000, vertices.p010, vertices.p011, vertices.p001]);
+      if (!occupied[xi + 1]?.[yi]) faces.push([vertices.p100, vertices.p101, vertices.p111, vertices.p110]);
+      if (!occupied[xi]?.[yi - 1]) faces.push([vertices.p000, vertices.p001, vertices.p101, vertices.p100]);
+      if (!occupied[xi]?.[yi + 1]) faces.push([vertices.p110, vertices.p111, vertices.p011, vertices.p010]);
       triangles.push(...facesToTriangles(faces));
     }
   }
