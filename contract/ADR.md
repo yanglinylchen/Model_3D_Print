@@ -1,6 +1,6 @@
 # Architecture Decision Record
 
-Status: draft, awaiting requirements confirmation.
+Status: confirmed for initial design and contract check.
 
 ## ADR-001: Use Production App Workflow
 

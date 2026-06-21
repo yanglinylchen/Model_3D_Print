@@ -1,6 +1,6 @@
 # Specification
 
-Status: draft, awaiting requirements confirmation.
+Status: confirmed for initial design and contract check.
 
 ## Product Summary
 

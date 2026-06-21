@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800" role="img" aria-labelledby="title desc">
+  <title id="title">Model 3D Print interface concept</title>
+  <desc id="desc">Desktop workbench layout with toolbar, material panel, central 3D viewport, inspector, and status bar.</desc>
+  <rect width="1280" height="800" fill="#f4f6f3"/>
+  <rect x="0" y="0" width="1280" height="58" fill="#243033"/>
+  <text x="24" y="36" fill="#ffffff" font-family="Arial, sans-serif" font-size="20" font-weight="700">Model 3D Print</text>
+  <g fill="#eef4ef" font-family="Arial, sans-serif" font-size="14">
+    <rect x="220" y="13" width="42" height="32" rx="6" fill="#3c4a4d"/>
+    <text x="232" y="34">↶</text>
+    <rect x="270" y="13" width="42" height="32" rx="6" fill="#3c4a4d"/>
+    <text x="282" y="34">↷</text>
+    <rect x="326" y="13" width="64" height="32" rx="6" fill="#3c4a4d"/>
+    <text x="344" y="34">複製</text>
+    <rect x="398" y="13" width="64" height="32" rx="6" fill="#3c4a4d"/>
+    <text x="416" y="34">貼上</text>
+    <rect x="476" y="13" width="64" height="32" rx="6" fill="#6f3d37"/>
+    <text x="494" y="34">清除</text>
+    <rect x="556" y="13" width="112" height="32" rx="6" fill="#3c4a4d"/>
+    <text x="576" y="34">整理材質方向</text>
+    <rect x="1100" y="13" width="132" height="32" rx="6" fill="#16746d"/>
+    <text x="1132" y="34">輸出 STL</text>
+  </g>
+  <rect x="0" y="58" width="204" height="690" fill="#ffffff"/>
+  <text x="20" y="92" fill="#253033" font-family="Arial, sans-serif" font-size="16" font-weight="700">材質</text>
+  <g font-family="Arial, sans-serif" font-size="13" fill="#2b3335">
+    <rect x="20" y="112" width="72" height="72" rx="8" fill="#b84b3f"/>
+    <path d="M20 136H92M20 160H92M44 112V136M68 136V160M44 160V184" stroke="#f0d0c8" stroke-width="3"/>
+    <text x="40" y="204">磚塊</text>
+    <rect x="112" y="112" width="72" height="72" rx="8" fill="#b97835"/>
+    <path d="M128 122C150 144 142 160 176 176M116 154C142 136 150 132 184 122" fill="none" stroke="#6d421f" stroke-width="3"/>
+    <text x="132" y="204">木材</text>
+    <rect x="20" y="228" width="72" height="72" rx="8" fill="#9ba3a3"/>
+    <path d="M28 246L84 238M30 270L78 284M44 232L34 296" stroke="#646d6e" stroke-width="3"/>
+    <text x="36" y="320">石板</text>
+    <rect x="112" y="228" width="72" height="72" rx="8" fill="#eee9df"/>
+    <path d="M124 244Q140 230 156 244T184 244M120 278Q146 260 184 278" fill="none" stroke="#c8c2b8" stroke-width="3"/>
+    <text x="132" y="320">羊毛</text>
+  </g>
+  <text x="20" y="366" fill="#253033" font-family="Arial, sans-serif" font-size="16" font-weight="700">形狀</text>
+  <g font-family="Arial, sans-serif" font-size="13" fill="#2b3335">
+    <rect x="20" y="386" width="164" height="38" rx="6" fill="#e7ece8" stroke="#c7d1ca"/>
+    <text x="80" y="410">方塊</text>
+    <rect x="20" y="434" width="164" height="38" rx="6" fill="#ffffff" stroke="#c7d1ca"/>
+    <text x="62" y="458">30° 三角柱</text>
+    <rect x="20" y="482" width="164" height="38" rx="6" fill="#ffffff" stroke="#c7d1ca"/>
+    <text x="62" y="506">45° 三角柱</text>
+  </g>
+  <text x="20" y="568" fill="#253033" font-family="Arial, sans-serif" font-size="16" font-weight="700">完成範例</text>
+  <rect x="20" y="590" width="164" height="40" rx="6" fill="#f0f5f2" stroke="#c7d1ca"/>
+  <text x="52" y="615" fill="#2b3335" font-family="Arial, sans-serif" font-size="14">小房子</text>
+  <rect x="204" y="58" width="806" height="690" fill="#dde5df"/>
+  <rect x="234" y="88" width="746" height="630" rx="8" fill="#eef2ee" stroke="#b9c8bd"/>
+  <g stroke="#c4d0c8" stroke-width="1">
+    <path d="M330 640L700 420L884 524L514 704Z"/>
+    <path d="M330 590L700 370L884 474L514 654Z"/>
+    <path d="M330 540L700 320L884 424L514 604Z"/>
+    <path d="M330 490L700 270L884 374L514 554Z"/>
+    <path d="M330 440L700 220L884 324L514 504Z"/>
+  </g>
+  <g>
+    <polygon points="540,470 610,430 680,470 610,512" fill="#b84b3f" stroke="#7e2f29" stroke-width="2"/>
+    <polygon points="610,430 610,360 680,400 680,470" fill="#9e3f36" stroke="#7e2f29" stroke-width="2"/>
+    <polygon points="540,470 540,400 610,360 610,430" fill="#cc5a4d" stroke="#7e2f29" stroke-width="2"/>
+    <polygon points="682,471 752,431 822,471 752,513" fill="#9ba3a3" stroke="#626c6e" stroke-width="2"/>
+    <polygon points="752,431 752,360 822,400 822,471" fill="#828b8c" stroke="#626c6e" stroke-width="2"/>
+    <polygon points="682,471 682,400 752,360 752,431" fill="#adb5b5" stroke="#626c6e" stroke-width="2"/>
+    <polygon points="610,356 752,356 682,308" fill="#b97835" stroke="#704421" stroke-width="2"/>
+  </g>
+  <rect x="798" y="104" width="160" height="46" rx="8" fill="#ffffffcc" stroke="#bdd0c4"/>
+  <text x="818" y="132" fill="#2b3335" font-family="Arial, sans-serif" font-size="14">座標 12, 4, 8</text>
+  <g opacity="0.75">
+    <circle cx="924" cy="640" r="30" fill="#ffffff" stroke="#9db2a6"/>
+    <text x="915" y="648" fill="#2b3335" font-family="Arial, sans-serif" font-size="18">↻</text>
+    <circle cx="854" cy="640" r="30" fill="#ffffff" stroke="#9db2a6"/>
+    <text x="845" y="648" fill="#2b3335" font-family="Arial, sans-serif" font-size="18">↺</text>
+  </g>
+  <rect x="1010" y="58" width="270" height="690" fill="#ffffff"/>
+  <text x="1030" y="92" fill="#253033" font-family="Arial, sans-serif" font-size="16" font-weight="700">屬性</text>
+  <g font-family="Arial, sans-serif" font-size="14" fill="#2b3335">
+    <text x="1030" y="126">選取：木材 30° 三角柱</text>
+    <text x="1030" y="158">旋轉：90°</text>
+    <text x="1030" y="190">紋理：固定實例</text>
+    <line x1="1030" y1="216" x2="1250" y2="216" stroke="#d7dfd8"/>
+    <text x="1030" y="250" font-weight="700">工作空間</text>
+    <text x="1030" y="282">X 20　Y 20　Z 20</text>
+    <text x="1030" y="314">方塊 128 / 10000</text>
+    <line x1="1030" y1="340" x2="1250" y2="340" stroke="#d7dfd8"/>
+    <text x="1030" y="374" font-weight="700">自動儲存</text>
+    <text x="1030" y="406">1 分鐘前已儲存</text>
+    <line x1="1030" y1="432" x2="1250" y2="432" stroke="#d7dfd8"/>
+    <text x="1030" y="466" font-weight="700">STL 狀態</text>
+    <rect x="1030" y="486" width="210" height="38" rx="6" fill="#e8f4ef" stroke="#97c6b5"/>
+    <text x="1050" y="511">可輸出，mesh 已通過</text>
+  </g>
+  <rect x="0" y="748" width="1280" height="52" fill="#253033"/>
+  <text x="24" y="780" fill="#e7efea" font-family="Arial, sans-serif" font-size="14">模式：放置　材質：木材　形狀：30° 三角柱　提示：上方放置需要側向或上方支撐</text>
+</svg>
+

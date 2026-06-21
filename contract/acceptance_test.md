@@ -1,6 +1,6 @@
 # Acceptance Test
 
-Status: draft, awaiting requirements confirmation.
+Status: confirmed for initial design and contract check.
 
 ## Draft Acceptance Criteria
 
