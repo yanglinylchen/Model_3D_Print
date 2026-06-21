@@ -27,6 +27,8 @@ import {
 import { exportAsciiStl } from "../core/stl.js";
 
 const ASSET = "../../assets";
+const WINDOW_THICKNESS_MM = 10;
+const WINDOW_BAR_MM = 8;
 const EXAMPLES = [
   { label: "小房子", path: `${ASSET}/examples/small_house.m3dp` },
   { label: "石橋", path: `${ASSET}/examples/stone_bridge.m3dp` },
@@ -161,7 +163,8 @@ function renderShapeControls() {
   const iconByShape = {
     cube: "cube.svg",
     prism_30: "prism_30.svg",
-    prism_45: "prism_45.svg"
+    prism_45: "prism_45.svg",
+    window_cross: "window_cross.svg"
   };
   elements.shapeList.innerHTML = "";
   for (const shape of Object.values(SHAPES)) {
@@ -247,6 +250,9 @@ function createBlockMesh(block) {
 }
 
 function createGeometry(shape) {
+  if (shape === "window_cross") {
+    return createWindowCrossGeometry();
+  }
   if (shape === "prism_30" || shape === "prism_45") {
     const height = shape === "prism_30" ? Math.tan(Math.PI / 6) * CELL_SIZE_MM : CELL_SIZE_MM;
     const s = CELL_SIZE_MM;
@@ -272,6 +278,66 @@ function createGeometry(shape) {
     return geometry;
   }
   return new THREE.BoxGeometry(CELL_SIZE_MM, CELL_SIZE_MM, CELL_SIZE_MM);
+}
+
+function createWindowCrossGeometry() {
+  const s = CELL_SIZE_MM;
+  const b = WINDOW_BAR_MM;
+  const center0 = s / 2 - b / 2;
+  const center1 = s / 2 + b / 2;
+  const spans = [0, b, center0, center1, s - b, s];
+  const occupied = [];
+  for (let xi = 0; xi < spans.length - 1; xi += 1) {
+    occupied[xi] = [];
+    for (let zi = 0; zi < spans.length - 1; zi += 1) {
+      const x0 = spans[xi];
+      const x1 = spans[xi + 1];
+      const z0 = spans[zi];
+      const z1 = spans[zi + 1];
+      occupied[xi][zi] = x0 < b || x1 > s - b || z0 < b || z1 > s - b || (x0 < center1 && x1 > center0) || (z0 < center1 && z1 > center0);
+    }
+  }
+
+  const positions = [];
+  const indices = [];
+  const y0 = -s / 2;
+  const y1 = y0 + WINDOW_THICKNESS_MM;
+  for (let xi = 0; xi < spans.length - 1; xi += 1) {
+    for (let zi = 0; zi < spans.length - 1; zi += 1) {
+      if (!occupied[xi][zi]) continue;
+      const x0 = -s / 2 + spans[xi];
+      const x1 = -s / 2 + spans[xi + 1];
+      const z0 = -s / 2 + spans[zi];
+      const z1 = -s / 2 + spans[zi + 1];
+      const vertices = {
+        p000: [x0, y0, z0],
+        p100: [x1, y0, z0],
+        p110: [x1, y1, z0],
+        p010: [x0, y1, z0],
+        p001: [x0, y0, z1],
+        p101: [x1, y0, z1],
+        p111: [x1, y1, z1],
+        p011: [x0, y1, z1]
+      };
+      appendFace(positions, indices, vertices.p000, vertices.p001, vertices.p101, vertices.p100);
+      appendFace(positions, indices, vertices.p010, vertices.p110, vertices.p111, vertices.p011);
+      if (!occupied[xi - 1]?.[zi]) appendFace(positions, indices, vertices.p000, vertices.p010, vertices.p011, vertices.p001);
+      if (!occupied[xi + 1]?.[zi]) appendFace(positions, indices, vertices.p100, vertices.p101, vertices.p111, vertices.p110);
+      if (!occupied[xi]?.[zi - 1]) appendFace(positions, indices, vertices.p000, vertices.p100, vertices.p110, vertices.p010);
+      if (!occupied[xi]?.[zi + 1]) appendFace(positions, indices, vertices.p001, vertices.p011, vertices.p111, vertices.p101);
+    }
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function appendFace(positions, indices, a, b, c, d) {
+  const start = positions.length / 3;
+  positions.push(...a, ...b, ...c, ...d);
+  indices.push(start, start + 1, start + 2, start, start + 2, start + 3);
 }
 
 function createMaterialTexture(material, seed) {

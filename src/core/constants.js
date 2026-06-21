@@ -38,6 +38,12 @@ export const SHAPES = Object.freeze({
     label: "45° 三角柱",
     maxHeightMm: CELL_SIZE_MM,
     restrictedTop: true
+  },
+  window_cross: {
+    id: "window_cross",
+    label: "十字窗",
+    maxHeightMm: CELL_SIZE_MM,
+    panelThicknessMm: 10
   }
 });
 

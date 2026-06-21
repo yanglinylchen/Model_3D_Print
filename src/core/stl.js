@@ -5,6 +5,8 @@ const BRICK_RELIEF_RAISE_MM = 1;
 const BRICK_RELIEF_EMBED_MM = 0.08;
 const BRICK_MORTAR_GAP_MM = 1.2;
 const BRICK_ROWS = 5;
+const WINDOW_THICKNESS_MM = 10;
+const WINDOW_BAR_MM = 8;
 
 export function exportAsciiStl(project, name = project.name || "model_3d_print") {
   const triangles = [];
@@ -58,6 +60,9 @@ export function trianglesForBlock(block, project = null) {
   }
   if (block.shape === "prism_45") {
     return triangularPrismTriangles(x, y, z, CELL_SIZE_MM, block, project);
+  }
+  if (block.shape === "window_cross") {
+    return rotateTrianglesZ(windowCrossTriangles(x, y, z), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
   }
   return cubeTriangles(x, y, z, CELL_SIZE_MM, block, project);
 }
@@ -149,6 +154,58 @@ function reliefBoxForFace(x, y, z, face, u0, u1, v0, v1) {
     return [[x + u0, y + CELL_SIZE_MM - embed, z + v0], [x + u1, y + CELL_SIZE_MM + raise, z + v1]];
   }
   return [[x + u0, y - raise, z + v0], [x + u1, y + embed, z + v1]];
+}
+
+function windowCrossTriangles(x, y, z) {
+  const s = CELL_SIZE_MM;
+  const b = WINDOW_BAR_MM;
+  const center0 = s / 2 - b / 2;
+  const center1 = s / 2 + b / 2;
+  const spans = [0, b, center0, center1, s - b, s];
+  const occupied = [];
+  for (let xi = 0; xi < spans.length - 1; xi += 1) {
+    occupied[xi] = [];
+    for (let zi = 0; zi < spans.length - 1; zi += 1) {
+      const x0 = spans[xi];
+      const x1 = spans[xi + 1];
+      const z0 = spans[zi];
+      const z1 = spans[zi + 1];
+      occupied[xi][zi] = x0 < b || x1 > s - b || z0 < b || z1 > s - b || (x0 < center1 && x1 > center0) || (z0 < center1 && z1 > center0);
+    }
+  }
+
+  const triangles = [];
+  const y0 = y;
+  const y1 = y + WINDOW_THICKNESS_MM;
+  for (let xi = 0; xi < spans.length - 1; xi += 1) {
+    for (let zi = 0; zi < spans.length - 1; zi += 1) {
+      if (!occupied[xi][zi]) continue;
+      const x0 = x + spans[xi];
+      const x1 = x + spans[xi + 1];
+      const z0 = z + spans[zi];
+      const z1 = z + spans[zi + 1];
+      const vertices = {
+        p000: [x0, y0, z0],
+        p100: [x1, y0, z0],
+        p110: [x1, y1, z0],
+        p010: [x0, y1, z0],
+        p001: [x0, y0, z1],
+        p101: [x1, y0, z1],
+        p111: [x1, y1, z1],
+        p011: [x0, y1, z1]
+      };
+      const faces = [
+        [vertices.p000, vertices.p001, vertices.p101, vertices.p100],
+        [vertices.p010, vertices.p110, vertices.p111, vertices.p011]
+      ];
+      if (!occupied[xi - 1]?.[zi]) faces.push([vertices.p000, vertices.p010, vertices.p011, vertices.p001]);
+      if (!occupied[xi + 1]?.[zi]) faces.push([vertices.p100, vertices.p101, vertices.p111, vertices.p110]);
+      if (!occupied[xi]?.[zi - 1]) faces.push([vertices.p000, vertices.p100, vertices.p110, vertices.p010]);
+      if (!occupied[xi]?.[zi + 1]) faces.push([vertices.p001, vertices.p011, vertices.p111, vertices.p101]);
+      triangles.push(...facesToTriangles(faces));
+    }
+  }
+  return triangles;
 }
 
 function seededUnit(value) {

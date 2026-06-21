@@ -82,6 +82,14 @@ test("copy paste preserves texture seed", () => {
   assert.equal(result.block.textureSeed, "exact-plain");
 });
 
+test("window cross shape occupies one regular grid cell", () => {
+  const project = createProject();
+  const placed = setBlock(project, makeBlock({ x: 2, y: 3, z: 1, shape: "window_cross", material: "plain" }));
+  assert.equal(placed.ok, true);
+  assert.equal(placed.block.shape, "window_cross");
+  assert.equal(placed.project.blocks.length, 1);
+});
+
 test("undo history retains only 50 steps", () => {
   let project = createProject({ workspaceCells: { x: 100, y: 1, z: 1 } });
   const history = new ProjectHistory(project);

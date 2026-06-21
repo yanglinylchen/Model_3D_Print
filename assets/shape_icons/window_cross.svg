@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="十字窗">
+  <defs>
+    <linearGradient id="frame" x1="12" x2="84" y1="16" y2="82" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#eef2ef"/>
+      <stop offset="1" stop-color="#9ca6a0"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="64" height="64" rx="4" fill="#293431"/>
+  <path fill="url(#frame)" fill-rule="evenodd" d="M20 20h56v56H20V20Zm9 9v38h38V29H29Z"/>
+  <rect x="44" y="24" width="8" height="48" fill="#d7ded9"/>
+  <rect x="24" y="44" width="48" height="8" fill="#d7ded9"/>
+  <path d="M31 31h11v11H31V31Zm23 0h11v11H54V31ZM31 54h11v11H31V54Zm23 0h11v11H54V54Z" fill="#b9d4df"/>
+</svg>

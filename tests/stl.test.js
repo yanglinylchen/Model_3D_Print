@@ -161,6 +161,50 @@ test("rotated triangular prism STL follows block rotation", () => {
   assert.ok(vertices.some((vertex) => vertex.x === 0 && vertex.y === 50 && vertex.z === 50));
 });
 
+test("window cross STL is a hollow 10mm thick panel inside one cell", () => {
+  const project = createProject({ name: "Window Cross" });
+  const placed = setBlock(project, makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    shape: "window_cross",
+    material: "plain"
+  }));
+  const exported = exportAsciiStl(placed.project);
+  assert.equal(exported.ok, true);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+
+  const vertices = verticesFromStl(exported.stl);
+  assert.equal(Math.min(...vertices.map((vertex) => vertex.x)), 0);
+  assert.equal(Math.max(...vertices.map((vertex) => vertex.x)), 50);
+  assert.equal(Math.min(...vertices.map((vertex) => vertex.y)), 0);
+  assert.equal(Math.max(...vertices.map((vertex) => vertex.y)), 10);
+  assert.equal(Math.min(...vertices.map((vertex) => vertex.z)), 0);
+  assert.equal(Math.max(...vertices.map((vertex) => vertex.z)), 50);
+  assert.ok(vertices.some((vertex) => vertex.x === 21 && vertex.z === 21), "window should include cross-bar inner corners");
+  assert.ok(!vertices.some((vertex) => vertex.x === 12 && vertex.z === 12), "window quadrant should stay hollow");
+});
+
+test("rotated window cross STL moves the 10mm panel to another outer side", () => {
+  const project = createProject({ name: "Rotated Window" });
+  const placed = setBlock(project, makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    shape: "window_cross",
+    material: "plain",
+    rotation: 90
+  }));
+  const exported = exportAsciiStl(placed.project);
+  assert.equal(exported.ok, true);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+  const vertices = verticesFromStl(exported.stl);
+  assert.equal(Math.min(...vertices.map((vertex) => vertex.x)), 40);
+  assert.equal(Math.max(...vertices.map((vertex) => vertex.x)), 50);
+  assert.equal(Math.min(...vertices.map((vertex) => vertex.y)), 0);
+  assert.equal(Math.max(...vertices.map((vertex) => vertex.y)), 50);
+});
+
 test("available materials are brick and plain only", () => {
   for (const material of ["brick", "plain"]) {
     const project = createProject({ name: `${material} Relief` });
