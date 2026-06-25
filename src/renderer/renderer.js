@@ -108,6 +108,13 @@ const cursorMaterial = new THREE.MeshBasicMaterial({
 });
 const cursorMesh = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE_MM, CELL_SIZE_MM, CELL_SIZE_MM), cursorMaterial);
 scene.add(cursorMesh);
+const hitboxGeometry = new THREE.BoxGeometry(CELL_SIZE_MM, CELL_SIZE_MM, CELL_SIZE_MM);
+const hitboxMaterial = new THREE.MeshBasicMaterial({
+  color: "#ffffff",
+  transparent: true,
+  opacity: 0,
+  depthWrite: false
+});
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 
@@ -223,6 +230,8 @@ function renderProject() {
 
   for (const block of state.project.blocks) {
     blockGroup.add(createBlockMesh(block));
+    const hitbox = createBlockHitbox(block);
+    if (hitbox) blockGroup.add(hitbox);
   }
   updateCursorMesh();
 }
@@ -245,11 +254,27 @@ function createBlockMesh(block) {
   mesh.rotation.z = THREE.MathUtils.degToRad(block.rotation || 0);
   mesh.userData.blockKey = `${block.x},${block.y},${block.z}`;
   mesh.userData.position = { x: block.x, y: block.y, z: block.z };
+  if (block.shape === "frame_cube") {
+    mesh.raycast = () => {};
+  }
   if (state.selected && samePosition(block, state.selected)) {
     const outline = new THREE.BoxHelper(mesh, "#16746d");
     mesh.add(outline);
   }
   return mesh;
+}
+
+function createBlockHitbox(block) {
+  if (block.shape !== "frame_cube") return null;
+  const hitbox = new THREE.Mesh(hitboxGeometry, hitboxMaterial);
+  hitbox.position.set(
+    block.x * CELL_SIZE_MM + CELL_SIZE_MM / 2,
+    block.y * CELL_SIZE_MM + CELL_SIZE_MM / 2,
+    block.z * CELL_SIZE_MM + CELL_SIZE_MM / 2
+  );
+  hitbox.userData.blockKey = `${block.x},${block.y},${block.z}`;
+  hitbox.userData.position = { x: block.x, y: block.y, z: block.z };
+  return hitbox;
 }
 
 function createGeometry(shape) {
