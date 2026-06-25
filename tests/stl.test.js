@@ -380,7 +380,7 @@ test("window cross above stair step overlaps slightly for slicer-safe support", 
   assert.deepEqual(nonManifoldEdges(exported.stl), []);
   const vertices = verticesFromStl(exported.stl);
   assert.ok(
-    vertices.some((vertex) => vertex.z < 50 && vertex.z > 49.9),
+    vertices.some((vertex) => vertex.z < 50 && vertex.z > 49.5),
     "window bottom should slightly overlap the stair support instead of only touching at z=50"
   );
 });
@@ -480,6 +480,56 @@ test("frame cube STL is a hollow edge-only one-cell frame", () => {
   assert.ok(vertices.some((vertex) => vertex.x === 45));
   assert.equal(coversPointInXz(trianglesFromStl(exported.stl), 25, 25), false, "frame cube center should stay hollow");
   assert.equal(coversPointInXz(trianglesFromStl(exported.stl), 2, 2), true, "frame cube edges should be solid");
+});
+
+test("frame cube above stair step overlaps slightly for slicer-safe support", () => {
+  let project = createProject({ name: "Stair Frame Cube", workspaceCells: { x: 3, y: 3, z: 3 } });
+  project = setBlock(project, makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    shape: "stair_step",
+    material: "plain"
+  })).project;
+  project = setBlock(project, makeBlock({
+    x: 0,
+    y: 0,
+    z: 1,
+    shape: "frame_cube",
+    material: "plain"
+  })).project;
+  const exported = exportAsciiStl(project);
+  assert.equal(exported.ok, true);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+  const vertices = verticesFromStl(exported.stl);
+  assert.ok(
+    vertices.some((vertex) => vertex.z < 50 && vertex.z > 49.5),
+    "frame cube bottom edges should slightly overlap the stair support instead of only touching at z=50"
+  );
+});
+
+test("adjacent frame cubes overlap slightly for slicer-safe edge connections", () => {
+  let project = createProject({ name: "Adjacent Frame Cubes", workspaceCells: { x: 3, y: 3, z: 2 } });
+  project = setBlock(project, makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    shape: "frame_cube",
+    material: "plain"
+  })).project;
+  project = setBlock(project, makeBlock({
+    x: 1,
+    y: 0,
+    z: 0,
+    shape: "frame_cube",
+    material: "plain"
+  })).project;
+  const exported = exportAsciiStl(project);
+  assert.equal(exported.ok, true);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+  const vertices = verticesFromStl(exported.stl);
+  assert.ok(vertices.some((vertex) => vertex.x > 50 && vertex.x < 50.5), "first frame cube should overlap the neighbor by a tiny weld");
+  assert.ok(vertices.some((vertex) => vertex.x < 50 && vertex.x > 49.5), "second frame cube should overlap the neighbor by a tiny weld");
 });
 
 test("brick stair step exports side relief on its L-profile sides", () => {

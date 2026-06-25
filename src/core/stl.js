@@ -1,6 +1,7 @@
 import { CELL_SIZE_MM, SHAPES } from "./constants.js";
 
 const PRISM_WELD_OVERLAP_MM = 0.08;
+const SUPPORT_WELD_OVERLAP_MM = 0.35;
 const BRICK_RELIEF_RAISE_MM = 1;
 const BRICK_RELIEF_EMBED_MM = 0.08;
 const BRICK_MORTAR_GAP_MM = 1.2;
@@ -116,7 +117,7 @@ export function trianglesForBlock(block, project = null) {
     return rotateTrianglesZ(stairStepTriangles(x, y, z), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
   }
   if (block.shape === "frame_cube") {
-    return frameCubeTriangles(x, y, z);
+    return frameCubeTriangles(x, y, z, block, project);
   }
   if (block.shape === "window_cross") {
     return rotateTrianglesZ(windowCrossTriangles(x, y, z, block, project), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
@@ -702,20 +703,28 @@ function stairStepTriangles(x, y, z) {
   ]);
 }
 
-function frameCubeTriangles(x, y, z) {
-  const spans = [0, FRAME_EDGE_MM, CELL_SIZE_MM - FRAME_EDGE_MM, CELL_SIZE_MM];
+function frameCubeTriangles(x, y, z, block = null, project = null) {
+  const weldWest = project && block && neighborAt(project, block, "west") ? SUPPORT_WELD_OVERLAP_MM : 0;
+  const weldEast = project && block && neighborAt(project, block, "east") ? SUPPORT_WELD_OVERLAP_MM : 0;
+  const weldSouth = project && block && neighborAt(project, block, "south") ? SUPPORT_WELD_OVERLAP_MM : 0;
+  const weldNorth = project && block && neighborAt(project, block, "north") ? SUPPORT_WELD_OVERLAP_MM : 0;
+  const weldBottom = project && block && neighborAt(project, block, "bottom") ? SUPPORT_WELD_OVERLAP_MM : 0;
+  const weldTop = project && block && neighborAt(project, block, "top") ? SUPPORT_WELD_OVERLAP_MM : 0;
+  const xSpans = [-weldWest, FRAME_EDGE_MM, CELL_SIZE_MM - FRAME_EDGE_MM, CELL_SIZE_MM + weldEast];
+  const ySpans = [-weldSouth, FRAME_EDGE_MM, CELL_SIZE_MM - FRAME_EDGE_MM, CELL_SIZE_MM + weldNorth];
+  const zSpans = [-weldBottom, FRAME_EDGE_MM, CELL_SIZE_MM - FRAME_EDGE_MM, CELL_SIZE_MM + weldTop];
   const occupied = [];
-  for (let xi = 0; xi < spans.length - 1; xi += 1) {
+  for (let xi = 0; xi < xSpans.length - 1; xi += 1) {
     occupied[xi] = [];
-    for (let yi = 0; yi < spans.length - 1; yi += 1) {
+    for (let yi = 0; yi < ySpans.length - 1; yi += 1) {
       occupied[xi][yi] = [];
-      for (let zi = 0; zi < spans.length - 1; zi += 1) {
+      for (let zi = 0; zi < zSpans.length - 1; zi += 1) {
         const exteriorAxes = [xi, yi, zi].filter((index) => index !== 1).length;
         occupied[xi][yi][zi] = exteriorAxes >= 2;
       }
     }
   }
-  return gridSolidTriangles(x, y, z, spans, spans, spans, occupied);
+  return gridSolidTriangles(x, y, z, xSpans, ySpans, zSpans, occupied);
 }
 
 function gridSolidTriangles(x, y, z, xSpans, ySpans, zSpans, occupied) {
@@ -757,7 +766,7 @@ function gridSolidTriangles(x, y, z, xSpans, ySpans, zSpans, occupied) {
 function windowCrossTriangles(x, y, z, block = null, project = null) {
   const s = CELL_SIZE_MM;
   const b = WINDOW_BAR_MM;
-  const bottomWeld = project && block && neighborAt(project, block, "bottom") ? PRISM_WELD_OVERLAP_MM : 0;
+  const bottomWeld = project && block && neighborAt(project, block, "bottom") ? SUPPORT_WELD_OVERLAP_MM : 0;
   const center0 = s / 2 - b / 2;
   const center1 = s / 2 + b / 2;
   const spans = [0, b, center0, center1, s - b, s];
