@@ -114,7 +114,7 @@ export function trianglesForBlock(block, project = null) {
     return triangularPrismTriangles(x, y, z, CELL_SIZE_MM, block, project);
   }
   if (block.shape === "stair_step") {
-    return rotateTrianglesZ(stairStepTriangles(x, y, z), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
+    return rotateTrianglesZ(stairStepTriangles(x, y, z, block, project), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
   }
   if (block.shape === "frame_cube") {
     return frameCubeTriangles(x, y, z, block, project);
@@ -668,27 +668,39 @@ function rotatedFace(face, degrees) {
   });
 }
 
-function stairStepTriangles(x, y, z) {
+function stairStepTriangles(x, y, z, block = null, project = null) {
   const s = CELL_SIZE_MM;
   const h = s / 2;
-  const y0 = y;
-  const y1 = y + s;
-  const a = [x, y0, z];
-  const b = [x + h, y0, z];
-  const c = [x + s, y0, z];
-  const d = [x + s, y0, z + h];
-  const e = [x + s, y0, z + s];
-  const f = [x + h, y0, z + s];
-  const g = [x + h, y0, z + h];
-  const i = [x, y0, z + h];
-  const A = [x, y1, z];
-  const B = [x + h, y1, z];
-  const C = [x + s, y1, z];
-  const D = [x + s, y1, z + h];
-  const E = [x + s, y1, z + s];
-  const F = [x + h, y1, z + s];
-  const G = [x + h, y1, z + h];
-  const I = [x, y1, z + h];
+  const rotation = block?.rotation || 0;
+  const weldWest = project && block && neighborAt(project, block, rotatedFace("west", rotation)) ? SUPPORT_WELD_OVERLAP_MM : 0;
+  const weldEast = project && block && neighborAt(project, block, rotatedFace("east", rotation)) ? SUPPORT_WELD_OVERLAP_MM : 0;
+  const weldSouth = project && block && neighborAt(project, block, rotatedFace("south", rotation)) ? SUPPORT_WELD_OVERLAP_MM : 0;
+  const weldNorth = project && block && neighborAt(project, block, rotatedFace("north", rotation)) ? SUPPORT_WELD_OVERLAP_MM : 0;
+  const weldBottom = project && block && neighborAt(project, block, "bottom") ? SUPPORT_WELD_OVERLAP_MM : 0;
+  const weldTop = project && block && neighborAt(project, block, "top") ? SUPPORT_WELD_OVERLAP_MM : 0;
+  const x0 = x - weldWest;
+  const x1 = x + s + weldEast;
+  const y0 = y - weldSouth;
+  const y1 = y + s + weldNorth;
+  const z0 = z - weldBottom;
+  const zMid = z + h;
+  const zTop = z + s + weldTop;
+  const a = [x0, y0, z0];
+  const b = [x + h, y0, z0];
+  const c = [x1, y0, z0];
+  const d = [x1, y0, zMid];
+  const e = [x1, y0, zTop];
+  const f = [x + h, y0, zTop];
+  const g = [x + h, y0, zMid];
+  const i = [x0, y0, zMid];
+  const A = [x0, y1, z0];
+  const B = [x + h, y1, z0];
+  const C = [x1, y1, z0];
+  const D = [x1, y1, zMid];
+  const E = [x1, y1, zTop];
+  const F = [x + h, y1, zTop];
+  const G = [x + h, y1, zMid];
+  const I = [x0, y1, zMid];
   return facesToTriangles([
     [a, b, g, i],
     [b, c, d, g],

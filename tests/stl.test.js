@@ -489,6 +489,53 @@ test("stair step STL is an L profile that occupies one cell", () => {
   assert.equal(coversPointInXz(triangles, 37, 37), true, "upper tread volume should be solid");
 });
 
+test("stair step on top of a cube overlaps slightly for slicer-safe support", () => {
+  let project = createProject({ name: "Supported Stair", workspaceCells: { x: 3, y: 3, z: 3 } });
+  project = setBlock(project, makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    shape: "cube",
+    material: "plain"
+  })).project;
+  project = setBlock(project, makeBlock({
+    x: 0,
+    y: 0,
+    z: 1,
+    shape: "stair_step",
+    material: "plain"
+  })).project;
+  const exported = exportAsciiStl(project);
+  assert.equal(exported.ok, true);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+  const vertices = verticesFromStl(exported.stl);
+  assert.ok(vertices.some((vertex) => vertex.z < 50 && vertex.z > 49.5), "stair bottom should overlap its lower support");
+});
+
+test("adjacent stair steps overlap slightly for slicer-safe side contact", () => {
+  let project = createProject({ name: "Adjacent Stairs", workspaceCells: { x: 3, y: 3, z: 2 } });
+  project = setBlock(project, makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    shape: "stair_step",
+    material: "plain"
+  })).project;
+  project = setBlock(project, makeBlock({
+    x: 1,
+    y: 0,
+    z: 0,
+    shape: "stair_step",
+    material: "plain"
+  })).project;
+  const exported = exportAsciiStl(project);
+  assert.equal(exported.ok, true);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+  const vertices = verticesFromStl(exported.stl);
+  assert.ok(vertices.some((vertex) => vertex.x > 50 && vertex.x < 50.5), "first stair should overlap the next stair by a tiny weld");
+  assert.ok(vertices.some((vertex) => vertex.x < 50 && vertex.x > 49.5), "second stair should overlap the previous stair by a tiny weld");
+});
+
 test("frame cube STL is a hollow edge-only one-cell frame", () => {
   const project = createProject({ name: "Frame Cube" });
   const placed = setBlock(project, makeBlock({
