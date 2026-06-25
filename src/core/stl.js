@@ -720,7 +720,7 @@ function frameCubeTriangles(x, y, z, block = null, project = null) {
   const weldEast = project && block && neighborAt(project, block, "east") ? SUPPORT_WELD_OVERLAP_MM : 0;
   const weldSouth = project && block && neighborAt(project, block, "south") ? SUPPORT_WELD_OVERLAP_MM : 0;
   const weldNorth = project && block && neighborAt(project, block, "north") ? SUPPORT_WELD_OVERLAP_MM : 0;
-  const weldBottom = project && block && neighborAt(project, block, "bottom") ? SUPPORT_WELD_OVERLAP_MM : 0;
+  const weldBottom = project && block && neighborAt(project, block, "bottom") && !hasStairBelow(project, block) ? SUPPORT_WELD_OVERLAP_MM : 0;
   const weldTop = project && block && neighborAt(project, block, "top") ? SUPPORT_WELD_OVERLAP_MM : 0;
   const xSpans = [-weldWest, FRAME_EDGE_MM, CELL_SIZE_MM - FRAME_EDGE_MM, CELL_SIZE_MM + weldEast];
   const ySpans = [-weldSouth, FRAME_EDGE_MM, CELL_SIZE_MM - FRAME_EDGE_MM, CELL_SIZE_MM + weldNorth];
@@ -781,7 +781,7 @@ function windowCrossTriangles(x, y, z, block = null, project = null) {
   const rotation = block?.rotation || 0;
   const weldWest = project && block && neighborAt(project, block, rotatedFace("west", rotation)) ? SUPPORT_WELD_OVERLAP_MM : 0;
   const weldEast = project && block && neighborAt(project, block, rotatedFace("east", rotation)) ? SUPPORT_WELD_OVERLAP_MM : 0;
-  const bottomWeld = project && block && neighborAt(project, block, "bottom") ? SUPPORT_WELD_OVERLAP_MM : 0;
+  const bottomWeld = project && block && neighborAt(project, block, "bottom") && !hasStairBelow(project, block) ? SUPPORT_WELD_OVERLAP_MM : 0;
   const center0 = s / 2 - b / 2;
   const center1 = s / 2 + b / 2;
   const spans = [-weldWest, b, center0, center1, s - b, s + weldEast];
@@ -829,6 +829,10 @@ function windowCrossTriangles(x, y, z, block = null, project = null) {
     }
   }
   return triangles;
+}
+
+function hasStairBelow(project, block) {
+  return neighborAt(project, block, "bottom")?.shape === "stair_step";
 }
 
 function fencePanelTriangles(x, y, z, block, project) {

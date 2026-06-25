@@ -404,8 +404,8 @@ test("window cross above stair step overlaps slightly for slicer-safe support", 
   assert.deepEqual(nonManifoldEdges(exported.stl), []);
   const vertices = verticesFromStl(exported.stl);
   assert.ok(
-    vertices.some((vertex) => vertex.z < 50 && vertex.z > 49.5),
-    "window bottom should slightly overlap the stair support instead of only touching at z=50"
+    vertices.some((vertex) => vertex.z > 50 && vertex.z < 50.5),
+    "stair top should slightly overlap the window support instead of both shapes welding into each other"
   );
   assert.ok(
     !vertices.some((vertex) => vertex.x === 21 && vertex.z < 49.5),
@@ -578,8 +578,8 @@ test("frame cube above stair step overlaps slightly for slicer-safe support", ()
   assert.deepEqual(nonManifoldEdges(exported.stl), []);
   const vertices = verticesFromStl(exported.stl);
   assert.ok(
-    vertices.some((vertex) => vertex.z < 50 && vertex.z > 49.5),
-    "frame cube bottom edges should slightly overlap the stair support instead of only touching at z=50"
+    vertices.some((vertex) => vertex.z > 50 && vertex.z < 50.5),
+    "stair top should slightly overlap the frame cube support instead of both shapes welding into each other"
   );
 });
 
