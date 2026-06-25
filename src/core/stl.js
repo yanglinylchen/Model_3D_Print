@@ -120,7 +120,11 @@ export function trianglesForBlock(block, project = null) {
     return frameCubeTriangles(x, y, z, block, project);
   }
   if (block.shape === "window_cross") {
-    return rotateTrianglesZ(windowCrossTriangles(x, y, z, block, project), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
+    const triangles = [
+      ...windowCrossTriangles(x, y, z, block, project),
+      ...windowCrossStairSupportTriangles(x, y, z, block, project)
+    ];
+    return rotateTrianglesZ(triangles, [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
   }
   if (block.shape === "fence_panel") {
     return rotateTrianglesZ(fencePanelTriangles(x, y, z, block, project), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
@@ -814,6 +818,18 @@ function windowCrossTriangles(x, y, z, block = null, project = null) {
     }
   }
   return triangles;
+}
+
+function windowCrossStairSupportTriangles(x, y, z, block = null, project = null) {
+  const below = project && block ? neighborAt(project, block, "bottom") : null;
+  if (below?.shape !== "stair_step") return [];
+  const supportBottom = z - (CELL_SIZE_MM / 2) - SUPPORT_WELD_OVERLAP_MM;
+  const supportTop = z + SUPPORT_WELD_OVERLAP_MM;
+  return [
+    ...cuboidTriangles([x, y, supportBottom], [x + WINDOW_BAR_MM, y + WINDOW_THICKNESS_MM, supportTop]),
+    ...cuboidTriangles([x + (CELL_SIZE_MM / 2) - (WINDOW_BAR_MM / 2), y, supportBottom], [x + (CELL_SIZE_MM / 2) + (WINDOW_BAR_MM / 2), y + WINDOW_THICKNESS_MM, supportTop]),
+    ...cuboidTriangles([x + CELL_SIZE_MM - WINDOW_BAR_MM, y, supportBottom], [x + CELL_SIZE_MM, y + WINDOW_THICKNESS_MM, supportTop])
+  ];
 }
 
 function fencePanelTriangles(x, y, z, block, project) {

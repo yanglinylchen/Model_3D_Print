@@ -383,6 +383,14 @@ test("window cross above stair step overlaps slightly for slicer-safe support", 
     vertices.some((vertex) => vertex.z < 50 && vertex.z > 49.5),
     "window bottom should slightly overlap the stair support instead of only touching at z=50"
   );
+  assert.ok(
+    vertices.some((vertex) => vertex.z < 25 && vertex.z > 24.5),
+    "window should add support legs that reach the lower stair tread"
+  );
+  assert.ok(
+    vertices.some((vertex) => vertex.x === 21 && vertex.z < 50),
+    "window center bar should have a support leg down to the stair"
+  );
 });
 
 test("door panel STL is a 100mm tall 10mm thick printable panel", () => {
