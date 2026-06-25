@@ -119,7 +119,7 @@ export function trianglesForBlock(block, project = null) {
     return frameCubeTriangles(x, y, z);
   }
   if (block.shape === "window_cross") {
-    return rotateTrianglesZ(windowCrossTriangles(x, y, z), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
+    return rotateTrianglesZ(windowCrossTriangles(x, y, z, block, project), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
   }
   if (block.shape === "fence_panel") {
     return rotateTrianglesZ(fencePanelTriangles(x, y, z, block, project), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
@@ -754,9 +754,10 @@ function gridSolidTriangles(x, y, z, xSpans, ySpans, zSpans, occupied) {
   return triangles;
 }
 
-function windowCrossTriangles(x, y, z) {
+function windowCrossTriangles(x, y, z, block = null, project = null) {
   const s = CELL_SIZE_MM;
   const b = WINDOW_BAR_MM;
+  const bottomWeld = project && block && neighborAt(project, block, "bottom") ? PRISM_WELD_OVERLAP_MM : 0;
   const center0 = s / 2 - b / 2;
   const center1 = s / 2 + b / 2;
   const spans = [0, b, center0, center1, s - b, s];
@@ -780,7 +781,7 @@ function windowCrossTriangles(x, y, z) {
       if (!occupied[xi][zi]) continue;
       const x0 = x + spans[xi];
       const x1 = x + spans[xi + 1];
-      const z0 = z + spans[zi];
+      const z0 = z + spans[zi] - (zi === 0 ? bottomWeld : 0);
       const z1 = z + spans[zi + 1];
       const vertices = {
         p000: [x0, y0, z0],
