@@ -359,6 +359,30 @@ test("rotated window cross STL moves the 10mm panel to another outer side", () =
   assert.equal(Math.max(...vertices.map((vertex) => vertex.y)), 50);
 });
 
+test("adjacent window crosses overlap slightly for slicer-safe wall rows", () => {
+  let project = createProject({ name: "Adjacent Windows", workspaceCells: { x: 4, y: 4, z: 2 } });
+  project = setBlock(project, makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    shape: "window_cross",
+    material: "plain"
+  })).project;
+  project = setBlock(project, makeBlock({
+    x: 1,
+    y: 0,
+    z: 0,
+    shape: "window_cross",
+    material: "plain"
+  })).project;
+  const exported = exportAsciiStl(project);
+  assert.equal(exported.ok, true);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+  const vertices = verticesFromStl(exported.stl);
+  assert.ok(vertices.some((vertex) => vertex.x > 50 && vertex.x < 50.5), "first window should overlap the next window by a tiny weld");
+  assert.ok(vertices.some((vertex) => vertex.x < 50 && vertex.x > 49.5), "second window should overlap the previous window by a tiny weld");
+});
+
 test("window cross above stair step overlaps slightly for slicer-safe support", () => {
   let project = createProject({ name: "Stair Window", workspaceCells: { x: 3, y: 3, z: 3 } });
   project = setBlock(project, makeBlock({

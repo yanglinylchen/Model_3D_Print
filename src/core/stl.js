@@ -770,10 +770,13 @@ function gridSolidTriangles(x, y, z, xSpans, ySpans, zSpans, occupied) {
 function windowCrossTriangles(x, y, z, block = null, project = null) {
   const s = CELL_SIZE_MM;
   const b = WINDOW_BAR_MM;
+  const rotation = block?.rotation || 0;
+  const weldWest = project && block && neighborAt(project, block, rotatedFace("west", rotation)) ? SUPPORT_WELD_OVERLAP_MM : 0;
+  const weldEast = project && block && neighborAt(project, block, rotatedFace("east", rotation)) ? SUPPORT_WELD_OVERLAP_MM : 0;
   const bottomWeld = project && block && neighborAt(project, block, "bottom") ? SUPPORT_WELD_OVERLAP_MM : 0;
   const center0 = s / 2 - b / 2;
   const center1 = s / 2 + b / 2;
-  const spans = [0, b, center0, center1, s - b, s];
+  const spans = [-weldWest, b, center0, center1, s - b, s + weldEast];
   const occupied = [];
   for (let xi = 0; xi < spans.length - 1; xi += 1) {
     occupied[xi] = [];
