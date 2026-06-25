@@ -30,6 +30,7 @@ const ASSET = "../../assets";
 const WINDOW_THICKNESS_MM = 10;
 const WINDOW_BAR_MM = 8;
 const FENCE_THICKNESS_MM = 10;
+const FRAME_EDGE_MM = 5;
 const DOOR_THICKNESS_MM = 10;
 const DOOR_BACK_RECESS_MM = 2;
 const DOOR_RAIL_MM = 7;
@@ -255,6 +256,9 @@ function createGeometry(shape) {
   if (shape === "stair_step") {
     return createStairStepGeometry();
   }
+  if (shape === "frame_cube") {
+    return createFrameCubeGeometry();
+  }
   if (shape === "archway") {
     return createArchwayGeometry();
   }
@@ -473,6 +477,59 @@ function createStairStepGeometry() {
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
   return geometry;
+}
+
+function createFrameCubeGeometry() {
+  const s = CELL_SIZE_MM;
+  const spans = [0, FRAME_EDGE_MM, s - FRAME_EDGE_MM, s];
+  const occupied = [];
+  for (let xi = 0; xi < spans.length - 1; xi += 1) {
+    occupied[xi] = [];
+    for (let yi = 0; yi < spans.length - 1; yi += 1) {
+      occupied[xi][yi] = [];
+      for (let zi = 0; zi < spans.length - 1; zi += 1) {
+        const exteriorAxes = [xi, yi, zi].filter((index) => index !== 1).length;
+        occupied[xi][yi][zi] = exteriorAxes >= 2;
+      }
+    }
+  }
+  return createGridSolidGeometry(spans, spans, spans, occupied);
+}
+
+function createGridSolidGeometry(xSpans, ySpans, zSpans, occupied) {
+  const s = CELL_SIZE_MM;
+  const positions = [];
+  const indices = [];
+  for (let xi = 0; xi < xSpans.length - 1; xi += 1) {
+    for (let yi = 0; yi < ySpans.length - 1; yi += 1) {
+      for (let zi = 0; zi < zSpans.length - 1; zi += 1) {
+        if (!occupied[xi][yi][zi]) continue;
+        const x0 = -s / 2 + xSpans[xi];
+        const x1 = -s / 2 + xSpans[xi + 1];
+        const y0 = -s / 2 + ySpans[yi];
+        const y1 = -s / 2 + ySpans[yi + 1];
+        const z0 = -s / 2 + zSpans[zi];
+        const z1 = -s / 2 + zSpans[zi + 1];
+        const vertices = {
+          p000: [x0, y0, z0],
+          p100: [x1, y0, z0],
+          p110: [x1, y1, z0],
+          p010: [x0, y1, z0],
+          p001: [x0, y0, z1],
+          p101: [x1, y0, z1],
+          p111: [x1, y1, z1],
+          p011: [x0, y1, z1]
+        };
+        if (!occupied[xi]?.[yi]?.[zi - 1]) appendFace(positions, indices, vertices.p000, vertices.p100, vertices.p110, vertices.p010);
+        if (!occupied[xi]?.[yi]?.[zi + 1]) appendFace(positions, indices, vertices.p001, vertices.p011, vertices.p111, vertices.p101);
+        if (!occupied[xi]?.[yi - 1]?.[zi]) appendFace(positions, indices, vertices.p000, vertices.p001, vertices.p101, vertices.p100);
+        if (!occupied[xi + 1]?.[yi]?.[zi]) appendFace(positions, indices, vertices.p100, vertices.p101, vertices.p111, vertices.p110);
+        if (!occupied[xi]?.[yi + 1]?.[zi]) appendFace(positions, indices, vertices.p110, vertices.p111, vertices.p011, vertices.p010);
+        if (!occupied[xi - 1]?.[yi]?.[zi]) appendFace(positions, indices, vertices.p010, vertices.p011, vertices.p001, vertices.p000);
+      }
+    }
+  }
+  return bufferGeometry(positions, indices);
 }
 
 function createDoorPanelGeometry() {

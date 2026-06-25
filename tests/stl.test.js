@@ -431,6 +431,31 @@ test("stair step STL is an L profile that occupies one cell", () => {
   assert.equal(coversPointInXz(triangles, 37, 37), true, "upper tread volume should be solid");
 });
 
+test("frame cube STL is a hollow edge-only one-cell frame", () => {
+  const project = createProject({ name: "Frame Cube" });
+  const placed = setBlock(project, makeBlock({
+    x: 0,
+    y: 0,
+    z: 0,
+    shape: "frame_cube",
+    material: "plain"
+  }));
+  const exported = exportAsciiStl(placed.project);
+  assert.equal(exported.ok, true);
+  assert.deepEqual(nonManifoldEdges(exported.stl), []);
+  const vertices = verticesFromStl(exported.stl);
+  assert.equal(Math.min(...vertices.map((vertex) => vertex.x)), 0);
+  assert.equal(Math.max(...vertices.map((vertex) => vertex.x)), 50);
+  assert.equal(Math.min(...vertices.map((vertex) => vertex.y)), 0);
+  assert.equal(Math.max(...vertices.map((vertex) => vertex.y)), 50);
+  assert.equal(Math.min(...vertices.map((vertex) => vertex.z)), 0);
+  assert.equal(Math.max(...vertices.map((vertex) => vertex.z)), 50);
+  assert.ok(vertices.some((vertex) => vertex.x === 5));
+  assert.ok(vertices.some((vertex) => vertex.x === 45));
+  assert.equal(coversPointInXz(trianglesFromStl(exported.stl), 25, 25), false, "frame cube center should stay hollow");
+  assert.equal(coversPointInXz(trianglesFromStl(exported.stl), 2, 2), true, "frame cube edges should be solid");
+});
+
 test("brick stair step exports side relief on its L-profile sides", () => {
   const project = createProject({ name: "Brick Stair" });
   const placed = setBlock(project, makeBlock({

@@ -20,6 +20,7 @@ const RIVER_THICKNESS_MM = 4;
 const WINDOW_THICKNESS_MM = 10;
 const WINDOW_BAR_MM = 8;
 const FENCE_THICKNESS_MM = 10;
+const FRAME_EDGE_MM = 5;
 const DOOR_THICKNESS_MM = 10;
 const DOOR_BACK_RECESS_MM = 2;
 const DOOR_RAIL_MM = 7;
@@ -113,6 +114,9 @@ export function trianglesForBlock(block, project = null) {
   }
   if (block.shape === "stair_step") {
     return rotateTrianglesZ(stairStepTriangles(x, y, z), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
+  }
+  if (block.shape === "frame_cube") {
+    return frameCubeTriangles(x, y, z);
   }
   if (block.shape === "window_cross") {
     return rotateTrianglesZ(windowCrossTriangles(x, y, z), [x + CELL_SIZE_MM / 2, y + CELL_SIZE_MM / 2], block.rotation || 0);
@@ -696,6 +700,58 @@ function stairStepTriangles(x, y, z) {
     [g, G, I, i],
     [i, I, A, a]
   ]);
+}
+
+function frameCubeTriangles(x, y, z) {
+  const spans = [0, FRAME_EDGE_MM, CELL_SIZE_MM - FRAME_EDGE_MM, CELL_SIZE_MM];
+  const occupied = [];
+  for (let xi = 0; xi < spans.length - 1; xi += 1) {
+    occupied[xi] = [];
+    for (let yi = 0; yi < spans.length - 1; yi += 1) {
+      occupied[xi][yi] = [];
+      for (let zi = 0; zi < spans.length - 1; zi += 1) {
+        const exteriorAxes = [xi, yi, zi].filter((index) => index !== 1).length;
+        occupied[xi][yi][zi] = exteriorAxes >= 2;
+      }
+    }
+  }
+  return gridSolidTriangles(x, y, z, spans, spans, spans, occupied);
+}
+
+function gridSolidTriangles(x, y, z, xSpans, ySpans, zSpans, occupied) {
+  const triangles = [];
+  for (let xi = 0; xi < xSpans.length - 1; xi += 1) {
+    for (let yi = 0; yi < ySpans.length - 1; yi += 1) {
+      for (let zi = 0; zi < zSpans.length - 1; zi += 1) {
+        if (!occupied[xi][yi][zi]) continue;
+        const x0 = x + xSpans[xi];
+        const x1 = x + xSpans[xi + 1];
+        const y0 = y + ySpans[yi];
+        const y1 = y + ySpans[yi + 1];
+        const z0 = z + zSpans[zi];
+        const z1 = z + zSpans[zi + 1];
+        const vertices = {
+          p000: [x0, y0, z0],
+          p100: [x1, y0, z0],
+          p110: [x1, y1, z0],
+          p010: [x0, y1, z0],
+          p001: [x0, y0, z1],
+          p101: [x1, y0, z1],
+          p111: [x1, y1, z1],
+          p011: [x0, y1, z1]
+        };
+        const faces = [];
+        if (!occupied[xi]?.[yi]?.[zi - 1]) faces.push([vertices.p000, vertices.p100, vertices.p110, vertices.p010]);
+        if (!occupied[xi]?.[yi]?.[zi + 1]) faces.push([vertices.p001, vertices.p011, vertices.p111, vertices.p101]);
+        if (!occupied[xi]?.[yi - 1]?.[zi]) faces.push([vertices.p000, vertices.p001, vertices.p101, vertices.p100]);
+        if (!occupied[xi + 1]?.[yi]?.[zi]) faces.push([vertices.p100, vertices.p101, vertices.p111, vertices.p110]);
+        if (!occupied[xi]?.[yi + 1]?.[zi]) faces.push([vertices.p110, vertices.p111, vertices.p011, vertices.p010]);
+        if (!occupied[xi - 1]?.[yi]?.[zi]) faces.push([vertices.p010, vertices.p011, vertices.p001, vertices.p000]);
+        triangles.push(...facesToTriangles(faces));
+      }
+    }
+  }
+  return triangles;
 }
 
 function windowCrossTriangles(x, y, z) {

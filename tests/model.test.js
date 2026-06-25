@@ -135,6 +135,14 @@ test("fence panel occupies one regular grid cell", () => {
   assert.equal(placed.project.blocks.length, 1);
 });
 
+test("frame cube occupies one regular grid cell", () => {
+  const project = createProject();
+  const placed = setBlock(project, makeBlock({ x: 2, y: 2, z: 0, shape: "frame_cube", material: "plain" }));
+  assert.equal(placed.ok, true);
+  assert.equal(placed.block.shape, "frame_cube");
+  assert.equal(placed.project.blocks.length, 1);
+});
+
 test("new scene objects occupy their expected grid cells", () => {
   let project = createProject({ workspaceCells: { x: 5, y: 5, z: 5 } });
   for (const shape of ["roof_corner", "chimney", "road", "river"]) {

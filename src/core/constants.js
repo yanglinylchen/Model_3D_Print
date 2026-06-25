@@ -68,6 +68,11 @@ export const SHAPES = Object.freeze({
     label: "樓梯",
     maxHeightMm: CELL_SIZE_MM
   },
+  frame_cube: {
+    id: "frame_cube",
+    label: "框架方塊",
+    maxHeightMm: CELL_SIZE_MM
+  },
   window_cross: {
     id: "window_cross",
     label: "十字窗",

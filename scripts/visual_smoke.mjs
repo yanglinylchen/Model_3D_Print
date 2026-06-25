@@ -90,7 +90,7 @@ try {
   if (metrics.materialButtons !== 6) {
     throw new Error(`Material controls did not render all materials: ${JSON.stringify(metrics)}`);
   }
-  if (metrics.shapeButtons !== 12) {
+  if (metrics.shapeButtons !== 13) {
     throw new Error(`Shape controls did not render all shapes: ${JSON.stringify(metrics)}`);
   }
   console.log(JSON.stringify(metrics, null, 2));
