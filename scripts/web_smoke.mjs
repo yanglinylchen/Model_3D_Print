@@ -43,6 +43,10 @@ try {
   await page.locator("#touchWorkspaceToggle").click();
   await page.locator("#touchWorkspaceX").fill("21");
   await page.locator("#touchApplyWorkspace").click();
+  await page.waitForFunction(() => {
+    const icons = Array.from(document.querySelectorAll("#touchShapeBar img"));
+    return icons.length > 0 && icons.every((icon) => icon.complete && icon.naturalWidth > 0);
+  });
   await page.locator("[data-touch-move='up']").click();
   const cursorAfterLayerMove = await page.locator("#cursorState").textContent();
   await page.locator("[data-touch-move='right']").click();
@@ -85,6 +89,7 @@ try {
       touchShapeBarBottom: getComputedStyle(touchShapeBar).bottom,
       touchShapeButtons: document.querySelectorAll("#touchShapeBar [data-shape]").length,
       touchShapeImageButtons: touchShapeBar.querySelectorAll("img, .touch-shape-glyph").length,
+      touchShapeLoadedImages: Array.from(touchShapeBar.querySelectorAll("img")).filter((icon) => icon.complete && icon.naturalWidth > 0).length,
       touchMaterialButtons: touchMaterialBar.querySelectorAll("[data-material]").length,
       selectedMaterialActive: document.querySelector("#touchMaterialBar [data-material='plain']").classList.contains("selected"),
       touchWorkspacePanelHidden: document.querySelector("#touchWorkspacePanel").hidden,
@@ -105,6 +110,7 @@ try {
   if (metrics.touchHudDisplay === "none") throw new Error(`Touch HUD did not appear: ${JSON.stringify(metrics)}`);
   if (metrics.touchShapeButtons !== 13) throw new Error(`Shape bar mismatch: ${JSON.stringify(metrics)}`);
   if (metrics.touchShapeImageButtons !== 13) throw new Error(`Shape icons did not render: ${JSON.stringify(metrics)}`);
+  if (metrics.touchShapeLoadedImages !== 7) throw new Error(`Shape SVG icons did not load: ${JSON.stringify(metrics)}`);
   if (metrics.touchMaterialButtons !== 6 || !metrics.selectedMaterialActive) {
     throw new Error(`Touch material bar failed: ${JSON.stringify(metrics)}`);
   }

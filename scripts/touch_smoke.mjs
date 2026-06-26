@@ -20,6 +20,10 @@ try {
   await page.locator("#touchWorkspaceToggle").click();
   await page.locator("#touchWorkspaceX").fill("21");
   await page.locator("#touchApplyWorkspace").click();
+  await page.waitForFunction(() => {
+    const icons = Array.from(document.querySelectorAll("#touchShapeBar img"));
+    return icons.length > 0 && icons.every((icon) => icon.complete && icon.naturalWidth > 0);
+  });
   await page.locator("[data-touch-move='up']").click();
   await page.waitForTimeout(250);
   const cursorAfterLayerMove = await page.locator("#cursorState").textContent();
@@ -62,6 +66,7 @@ try {
       touchShapeBarBottom: getComputedStyle(touchShapeBar).bottom,
       touchShapeButtons: touchShapeBar.querySelectorAll("[data-shape]").length,
       touchShapeImageButtons: touchShapeBar.querySelectorAll("img, .touch-shape-glyph").length,
+      touchShapeLoadedImages: Array.from(touchShapeBar.querySelectorAll("img")).filter((icon) => icon.complete && icon.naturalWidth > 0).length,
       touchMaterialButtons: touchMaterialBar.querySelectorAll("[data-material]").length,
       selectedShapeActive: selectedShape.classList.contains("selected"),
       selectedMaterialActive: selectedMaterial.classList.contains("selected"),
@@ -84,6 +89,9 @@ try {
   }
   if (metrics.touchShapeImageButtons !== 13) {
     throw new Error(`Touch shape bar did not render icon controls: ${JSON.stringify(metrics)}`);
+  }
+  if (metrics.touchShapeLoadedImages !== 7) {
+    throw new Error(`Touch shape SVG icons did not load: ${JSON.stringify(metrics)}`);
   }
   if (metrics.touchMaterialButtons !== 6 || !metrics.selectedMaterialActive) {
     throw new Error(`Touch material bar did not update active material: ${JSON.stringify(metrics)}`);

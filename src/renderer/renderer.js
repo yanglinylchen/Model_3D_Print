@@ -26,7 +26,7 @@ import {
 } from "../core/model.js";
 import { exportAsciiStl } from "../core/stl.js";
 
-const ASSET = "../../assets";
+const ASSET = new URL("../../assets/", import.meta.url).href;
 const WINDOW_THICKNESS_MM = 10;
 const WINDOW_BAR_MM = 8;
 const FENCE_THICKNESS_MM = 10;
@@ -57,19 +57,19 @@ const SHAPE_ICON_LABELS = Object.freeze({
   river: "≈"
 });
 const SHAPE_ICON_ASSETS = Object.freeze({
-  cube: `${ASSET}/shape_icons/cube.svg`,
-  prism_30: `${ASSET}/shape_icons/prism_30.svg`,
-  prism_45: `${ASSET}/shape_icons/prism_45.svg`,
-  stair_step: `${ASSET}/shape_icons/stair_step.svg`,
-  window_cross: `${ASSET}/shape_icons/window_cross.svg`,
-  fence_panel: `${ASSET}/shape_icons/fence_panel.svg`,
-  door_panel: `${ASSET}/shape_icons/door_panel.svg`
+  cube: `${ASSET}shape_icons/cube.svg`,
+  prism_30: `${ASSET}shape_icons/prism_30.svg`,
+  prism_45: `${ASSET}shape_icons/prism_45.svg`,
+  stair_step: `${ASSET}shape_icons/stair_step.svg`,
+  window_cross: `${ASSET}shape_icons/window_cross.svg`,
+  fence_panel: `${ASSET}shape_icons/fence_panel.svg`,
+  door_panel: `${ASSET}shape_icons/door_panel.svg`
 });
 const EXAMPLES = [
-  { label: "小房子", path: `${ASSET}/examples/small_house.m3dp` },
-  { label: "石橋", path: `${ASSET}/examples/stone_bridge.m3dp` },
-  { label: "教室牌", path: `${ASSET}/examples/classroom_sign.m3dp` },
-  { label: "城牆", path: `${ASSET}/examples/tower_wall.m3dp` }
+  { label: "小房子", path: `${ASSET}examples/small_house.m3dp` },
+  { label: "石橋", path: `${ASSET}examples/stone_bridge.m3dp` },
+  { label: "教室牌", path: `${ASSET}examples/classroom_sign.m3dp` },
+  { label: "城牆", path: `${ASSET}examples/tower_wall.m3dp` }
 ];
 
 const state = {
