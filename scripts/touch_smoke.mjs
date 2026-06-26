@@ -16,6 +16,10 @@ try {
   await page.waitForTimeout(1200);
 
   await page.locator("#touchShapeBar [data-shape='frame_cube']").click();
+  await page.locator("#touchMaterialBar [data-material='plain']").click();
+  await page.locator("#touchWorkspaceToggle").click();
+  await page.locator("#touchWorkspaceX").fill("21");
+  await page.locator("#touchApplyWorkspace").click();
   await page.locator("[data-touch-move='up']").click();
   await page.waitForTimeout(250);
   const cursorAfterLayerMove = await page.locator("#cursorState").textContent();
@@ -50,12 +54,19 @@ try {
   const metrics = await page.evaluate(({ cursorAfterLayerMove, twoFingerGestureDispatched }) => {
     const touchHud = document.querySelector(".touch-hud");
     const touchShapeBar = document.querySelector("#touchShapeBar");
+    const touchMaterialBar = document.querySelector("#touchMaterialBar");
     const selectedShape = document.querySelector("#touchShapeBar [data-shape='frame_cube']");
+    const selectedMaterial = document.querySelector("#touchMaterialBar [data-material='plain']");
     return {
       touchHudDisplay: getComputedStyle(touchHud).display,
       touchShapeBarBottom: getComputedStyle(touchShapeBar).bottom,
       touchShapeButtons: touchShapeBar.querySelectorAll("[data-shape]").length,
+      touchShapeImageButtons: touchShapeBar.querySelectorAll("img, .touch-shape-glyph").length,
+      touchMaterialButtons: touchMaterialBar.querySelectorAll("[data-material]").length,
       selectedShapeActive: selectedShape.classList.contains("selected"),
+      selectedMaterialActive: selectedMaterial.classList.contains("selected"),
+      touchWorkspacePanelHidden: document.querySelector("#touchWorkspacePanel").hidden,
+      workspaceX: document.querySelector("#workspaceX").value,
       cursorState: document.querySelector("#cursorState")?.textContent || "",
       cursorAfterLayerMove,
       twoFingerGestureDispatched,
@@ -70,6 +81,15 @@ try {
   }
   if (metrics.touchShapeButtons !== 13) {
     throw new Error(`Touch shape bar did not render all shapes: ${JSON.stringify(metrics)}`);
+  }
+  if (metrics.touchShapeImageButtons !== 13) {
+    throw new Error(`Touch shape bar did not render icon controls: ${JSON.stringify(metrics)}`);
+  }
+  if (metrics.touchMaterialButtons !== 6 || !metrics.selectedMaterialActive) {
+    throw new Error(`Touch material bar did not update active material: ${JSON.stringify(metrics)}`);
+  }
+  if (!metrics.touchWorkspacePanelHidden || metrics.workspaceX !== "21") {
+    throw new Error(`Touch workspace controls did not resize workspace: ${JSON.stringify(metrics)}`);
   }
   if (!metrics.selectedShapeActive || !metrics.modeState.includes("框架方塊")) {
     throw new Error(`Touch shape selection did not update active shape: ${JSON.stringify(metrics)}`);

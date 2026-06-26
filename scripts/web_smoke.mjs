@@ -39,6 +39,10 @@ try {
     throw new Error(`Touch shape bar did not initialize:\n${debugState()}`);
   }
   await frameButton.click();
+  await page.locator("#touchMaterialBar [data-material='plain']").click();
+  await page.locator("#touchWorkspaceToggle").click();
+  await page.locator("#touchWorkspaceX").fill("21");
+  await page.locator("#touchApplyWorkspace").click();
   await page.locator("[data-touch-move='up']").click();
   const cursorAfterLayerMove = await page.locator("#cursorState").textContent();
   await page.locator("[data-touch-move='right']").click();
@@ -72,6 +76,7 @@ try {
     const canvas = document.querySelector("#viewport");
     const context = canvas.getContext("webgl2") || canvas.getContext("webgl");
     const touchShapeBar = document.querySelector("#touchShapeBar");
+    const touchMaterialBar = document.querySelector("#touchMaterialBar");
     return {
       platform: window.model3d?.platform,
       location: window.location.href,
@@ -79,6 +84,11 @@ try {
       touchHudDisplay: getComputedStyle(document.querySelector(".touch-hud")).display,
       touchShapeBarBottom: getComputedStyle(touchShapeBar).bottom,
       touchShapeButtons: document.querySelectorAll("#touchShapeBar [data-shape]").length,
+      touchShapeImageButtons: touchShapeBar.querySelectorAll("img, .touch-shape-glyph").length,
+      touchMaterialButtons: touchMaterialBar.querySelectorAll("[data-material]").length,
+      selectedMaterialActive: document.querySelector("#touchMaterialBar [data-material='plain']").classList.contains("selected"),
+      touchWorkspacePanelHidden: document.querySelector("#touchWorkspacePanel").hidden,
+      workspaceX: document.querySelector("#workspaceX").value,
       cursorState: document.querySelector("#cursorState")?.textContent || "",
       cursorAfterLayerMove,
       twoFingerGestureDispatched,
@@ -94,6 +104,13 @@ try {
   if (!metrics.hasWebgl) throw new Error(`WebGL did not initialize: ${JSON.stringify(metrics)}`);
   if (metrics.touchHudDisplay === "none") throw new Error(`Touch HUD did not appear: ${JSON.stringify(metrics)}`);
   if (metrics.touchShapeButtons !== 13) throw new Error(`Shape bar mismatch: ${JSON.stringify(metrics)}`);
+  if (metrics.touchShapeImageButtons !== 13) throw new Error(`Shape icons did not render: ${JSON.stringify(metrics)}`);
+  if (metrics.touchMaterialButtons !== 6 || !metrics.selectedMaterialActive) {
+    throw new Error(`Touch material bar failed: ${JSON.stringify(metrics)}`);
+  }
+  if (!metrics.touchWorkspacePanelHidden || metrics.workspaceX !== "21") {
+    throw new Error(`Touch workspace controls failed: ${JSON.stringify(metrics)}`);
+  }
   if (!metrics.cursorAfterLayerMove.includes("0, 0, 1")) {
     throw new Error(`Touch layer move failed: ${JSON.stringify(metrics)}`);
   }

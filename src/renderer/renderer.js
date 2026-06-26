@@ -41,6 +41,30 @@ const VIEW_DRAG_THRESHOLD_PX = 8;
 const VIEW_DRAG_YAW_SPEED = 0.006;
 const VIEW_DRAG_PITCH_SPEED = 0.0035;
 const TOUCH_PAN_MM_PER_PX = 0.7;
+const SHAPE_ICON_LABELS = Object.freeze({
+  cube: "■",
+  prism_30: "◢",
+  prism_45: "◿",
+  stair_step: "▟",
+  frame_cube: "□",
+  window_cross: "⊞",
+  fence_panel: "▥",
+  door_panel: "▯",
+  archway: "∩",
+  roof_corner: "⌂",
+  chimney: "▤",
+  road: "═",
+  river: "≈"
+});
+const SHAPE_ICON_ASSETS = Object.freeze({
+  cube: `${ASSET}/shape_icons/cube.svg`,
+  prism_30: `${ASSET}/shape_icons/prism_30.svg`,
+  prism_45: `${ASSET}/shape_icons/prism_45.svg`,
+  stair_step: `${ASSET}/shape_icons/stair_step.svg`,
+  window_cross: `${ASSET}/shape_icons/window_cross.svg`,
+  fence_panel: `${ASSET}/shape_icons/fence_panel.svg`,
+  door_panel: `${ASSET}/shape_icons/door_panel.svg`
+});
 const EXAMPLES = [
   { label: "小房子", path: `${ASSET}/examples/small_house.m3dp` },
   { label: "石橋", path: `${ASSET}/examples/stone_bridge.m3dp` },
@@ -93,6 +117,12 @@ const elements = {
   placeMode: document.getElementById("placeMode"),
   selectMode: document.getElementById("selectMode"),
   touchShapeBar: document.getElementById("touchShapeBar"),
+  touchMaterialBar: document.getElementById("touchMaterialBar"),
+  touchWorkspaceToggle: document.getElementById("touchWorkspaceToggle"),
+  touchWorkspacePanel: document.getElementById("touchWorkspacePanel"),
+  touchWorkspaceX: document.getElementById("touchWorkspaceX"),
+  touchWorkspaceY: document.getElementById("touchWorkspaceY"),
+  touchWorkspaceZ: document.getElementById("touchWorkspaceZ"),
   recoverDialog: document.getElementById("recoverDialog")
 };
 
@@ -132,6 +162,7 @@ init();
 function init() {
   renderMaterialControls();
   renderShapeControls();
+  renderTouchMaterialBar();
   renderTouchShapeBar();
   renderExamples();
   bindControls();
@@ -158,6 +189,8 @@ function bindControls() {
   document.getElementById("alignMaterial").addEventListener("click", alignCurrentMaterial);
   document.getElementById("exportStl").addEventListener("click", exportStl);
   document.getElementById("applyWorkspace").addEventListener("click", applyWorkspace);
+  document.getElementById("touchApplyWorkspace").addEventListener("click", applyTouchWorkspace);
+  elements.touchWorkspaceToggle.addEventListener("click", toggleTouchWorkspacePanel);
   document.getElementById("cameraLeft").addEventListener("click", () => rotateCamera(-0.2));
   document.getElementById("cameraRight").addEventListener("click", () => rotateCamera(0.2));
   elements.materialList.addEventListener("change", changeActiveMaterial);
@@ -178,6 +211,23 @@ function bindControls() {
   document.querySelectorAll("[data-touch-command]").forEach((button) => {
     button.addEventListener("click", handleTouchCommandButton);
   });
+}
+
+function renderTouchMaterialBar() {
+  elements.touchMaterialBar.innerHTML = "";
+  for (const material of Object.values(MATERIALS)) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.material = material.id;
+    button.title = `選擇${material.label}`;
+    button.setAttribute("aria-label", `選擇${material.label}`);
+    const swatch = document.createElement("span");
+    swatch.className = "touch-material-swatch";
+    swatch.style.background = material.color;
+    button.append(swatch);
+    button.addEventListener("click", () => selectTouchMaterial(material.id));
+    elements.touchMaterialBar.append(button);
+  }
 }
 
 function renderMaterialControls() {
@@ -214,8 +264,21 @@ function renderTouchShapeBar() {
     const button = document.createElement("button");
     button.type = "button";
     button.dataset.shape = shape.id;
-    button.textContent = shape.label;
     button.title = `選擇${shape.label}`;
+    button.setAttribute("aria-label", `選擇${shape.label}`);
+    const iconAsset = SHAPE_ICON_ASSETS[shape.id];
+    if (iconAsset) {
+      const icon = document.createElement("img");
+      icon.src = iconAsset;
+      icon.alt = "";
+      icon.draggable = false;
+      button.append(icon);
+    } else {
+      const icon = document.createElement("span");
+      icon.className = "touch-shape-glyph";
+      icon.textContent = SHAPE_ICON_LABELS[shape.id] || shape.label.slice(0, 1);
+      button.append(icon);
+    }
     button.addEventListener("click", () => {
       state.selectedShape = shape.id;
       clampCursorToSelectedShape();
@@ -1385,7 +1448,7 @@ function screenRelativeCursorDelta(direction) {
     { x: 0, y: 1 },
     { x: 0, y: -1 }
   ];
-  let best = { x: 0, y: 0 };
+  let best = null;
   let bestScore = -Infinity;
   for (const delta of candidates) {
     const position = {
@@ -1412,7 +1475,27 @@ function screenRelativeCursorDelta(direction) {
       best = delta;
     }
   }
-  return best;
+  return best || angleRelativeCursorDelta(direction);
+}
+
+function angleRelativeCursorDelta(direction) {
+  const viewForward = {
+    x: -Math.cos(state.cameraAngle),
+    y: -Math.sin(state.cameraAngle)
+  };
+  const viewRight = {
+    x: -Math.sin(state.cameraAngle),
+    y: Math.cos(state.cameraAngle)
+  };
+  const vector = direction === "back"
+    ? { x: -viewForward.x, y: -viewForward.y }
+    : direction === "right"
+      ? viewRight
+      : direction === "left"
+        ? { x: -viewRight.x, y: -viewRight.y }
+        : viewForward;
+  if (Math.abs(vector.x) >= Math.abs(vector.y)) return { x: Math.sign(vector.x), y: 0 };
+  return { x: 0, y: Math.sign(vector.y) };
 }
 
 function projectedCellCenter(position) {
@@ -1546,6 +1629,21 @@ function changeActiveMaterial() {
   updateUi();
 }
 
+function selectTouchMaterial(materialId) {
+  state.selectedMaterial = materialId;
+  const selectedBlock = state.selected ? getBlock(state.project, state.selected) : null;
+  if (selectedBlock) {
+    const result = changeBlockMaterial(state.project, state.selected, materialId);
+    if (result.ok) {
+      commitProject(result.project);
+      return;
+    }
+    setWarning(result.reason);
+    return;
+  }
+  updateUi();
+}
+
 function changeActiveShape() {
   state.selectedShape = elements.shapeList.value;
   clampCursorToSelectedShape();
@@ -1567,6 +1665,7 @@ function currentShapeHeightCells() {
 
 function commitProject(project) {
   state.project = state.history.commit(project);
+  updateWorkspaceInputs();
   renderProject();
   updateUi();
 }
@@ -1641,16 +1740,30 @@ function alignCurrentMaterial() {
 }
 
 function applyWorkspace() {
+  applyWorkspaceFromInputs(elements.workspaceX, elements.workspaceY, elements.workspaceZ);
+}
+
+function applyTouchWorkspace() {
+  applyWorkspaceFromInputs(elements.touchWorkspaceX, elements.touchWorkspaceY, elements.touchWorkspaceZ);
+  elements.touchWorkspacePanel.hidden = true;
+}
+
+function applyWorkspaceFromInputs(inputX, inputY, inputZ) {
   const result = resizeWorkspace(state.project, {
-    x: Number(elements.workspaceX.value),
-    y: Number(elements.workspaceY.value),
-    z: Number(elements.workspaceZ.value)
+    x: Number(inputX.value),
+    y: Number(inputY.value),
+    z: Number(inputZ.value)
   });
   if (!result.ok) {
     updateWorkspaceInputs();
     return setWarning(result.reason);
   }
   commitProject(result.project);
+}
+
+function toggleTouchWorkspacePanel() {
+  elements.touchWorkspacePanel.hidden = !elements.touchWorkspacePanel.hidden;
+  if (!elements.touchWorkspacePanel.hidden) updateWorkspaceInputs();
 }
 
 function newProject() {
@@ -1744,6 +1857,9 @@ function updateWorkspaceInputs() {
   elements.workspaceX.value = state.project.workspaceCells.x;
   elements.workspaceY.value = state.project.workspaceCells.y;
   elements.workspaceZ.value = state.project.workspaceCells.z;
+  elements.touchWorkspaceX.value = state.project.workspaceCells.x;
+  elements.touchWorkspaceY.value = state.project.workspaceCells.y;
+  elements.touchWorkspaceZ.value = state.project.workspaceCells.z;
 }
 
 function updateUi() {

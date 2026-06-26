@@ -16,6 +16,10 @@
   box-sizing: border-box;
 }
 
+html {
+  touch-action: manipulation;
+}
+
 body {
   margin: 0;
   overflow: hidden;
@@ -37,6 +41,7 @@ button {
   background: #f7faf8;
   color: var(--text);
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 button:hover {
@@ -249,8 +254,104 @@ h2 {
 .touch-dpad,
 .touch-layer-pad,
 .touch-actions,
+.touch-top-controls,
+.touch-material-bar,
 .touch-shape-bar {
   pointer-events: auto;
+}
+
+.touch-top-controls {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  left: 12px;
+  right: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.touch-material-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: min(430px, calc(100% - 82px));
+}
+
+.touch-material-bar button {
+  width: 42px;
+  height: 42px;
+  min-height: 42px;
+  border-radius: 50%;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow: 0 6px 18px rgba(20, 32, 34, 0.12);
+  backdrop-filter: blur(10px);
+}
+
+.touch-material-bar button.selected {
+  border-color: var(--accent);
+  outline: 2px solid rgba(22, 116, 109, 0.38);
+  outline-offset: 2px;
+}
+
+.touch-material-swatch {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 1px solid rgba(30, 45, 48, 0.18);
+}
+
+.touch-workspace-toggle {
+  margin-left: auto;
+  min-width: 58px;
+  min-height: 42px;
+  border-radius: 21px;
+  background: rgba(255, 255, 255, 0.78);
+  font-weight: 700;
+  box-shadow: 0 6px 18px rgba(20, 32, 34, 0.12);
+  backdrop-filter: blur(10px);
+}
+
+.touch-workspace-panel {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 58px);
+  gap: 8px;
+  width: 206px;
+  padding: 10px;
+  border: 1px solid rgba(30, 45, 48, 0.28);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 12px 30px rgba(20, 32, 34, 0.16);
+  backdrop-filter: blur(12px);
+}
+
+.touch-workspace-panel[hidden] {
+  display: none;
+}
+
+.touch-workspace-panel label {
+  display: grid;
+  gap: 3px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.touch-workspace-panel input {
+  width: 100%;
+  min-height: 36px;
+}
+
+.touch-workspace-panel button {
+  grid-column: 1 / -1;
+  min-height: 38px;
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #ffffff;
+  font-weight: 700;
 }
 
 .touch-dpad {
@@ -350,12 +451,29 @@ h2 {
 
 .touch-shape-bar button {
   flex: 0 0 auto;
-  min-width: 74px;
-  min-height: 46px;
+  display: grid;
+  place-items: center;
+  width: 50px;
+  min-width: 50px;
+  height: 48px;
+  min-height: 48px;
   border-radius: 8px;
-  padding: 0 12px;
+  padding: 7px;
   font-size: 14px;
   white-space: nowrap;
+}
+
+.touch-shape-bar img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.touch-shape-glyph {
+  font-size: 25px;
+  line-height: 1;
+  pointer-events: none;
 }
 
 .touch-shape-bar button.selected {

@@ -2,7 +2,7 @@
 <html lang="zh-Hant-TW">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Model 3D Print</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
@@ -54,6 +54,16 @@
           <button id="cameraRight" title="視角右轉">↻</button>
         </div>
         <div class="touch-hud" aria-label="觸控操作">
+          <div class="touch-top-controls" aria-label="觸控設定">
+            <div id="touchMaterialBar" class="touch-material-bar" aria-label="材質熱鍵列"></div>
+            <button id="touchWorkspaceToggle" class="touch-workspace-toggle" title="調整工作空間">格數</button>
+            <div id="touchWorkspacePanel" class="touch-workspace-panel" hidden>
+              <label>X <input id="touchWorkspaceX" type="number" min="1" max="200" /></label>
+              <label>Y <input id="touchWorkspaceY" type="number" min="1" max="200" /></label>
+              <label>Z <input id="touchWorkspaceZ" type="number" min="1" max="200" /></label>
+              <button id="touchApplyWorkspace" type="button">套用</button>
+            </div>
+          </div>
           <div class="touch-dpad" aria-label="游標方向">
             <button data-touch-move="forward" class="touch-dpad-up" title="游標往前">▲</button>
             <button data-touch-move="left" class="touch-dpad-left" title="游標往左">◀</button>
