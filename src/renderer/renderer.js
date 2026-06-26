@@ -40,7 +40,9 @@ const RIVER_THICKNESS_MM = 4;
 const VIEW_DRAG_THRESHOLD_PX = 8;
 const VIEW_DRAG_YAW_SPEED = 0.006;
 const VIEW_DRAG_PITCH_SPEED = 0.0035;
-const TOUCH_PAN_MM_PER_PX = 0.7;
+const TOUCH_LONG_PRESS_DELETE_MS = 620;
+const TOUCH_LONG_PRESS_MOVE_PX = 12;
+const TOUCH_VIEW_PAN_STEP_MM = CELL_SIZE_MM * 0.38;
 const SHAPE_ICON_LABELS = Object.freeze({
   cube: "■",
   prism_30: "◢",
@@ -93,6 +95,7 @@ const state = {
   viewportDrag: null,
   touchPointers: new Map(),
   viewportGesture: null,
+  touchLongPressDelete: null,
   suppressNextClick: false,
   warning: ""
 };
@@ -134,10 +137,15 @@ const camera = new THREE.PerspectiveCamera(45, 1, 1, 6000);
 const blockGroup = new THREE.Group();
 const helperGroup = new THREE.Group();
 scene.add(blockGroup, helperGroup);
-scene.add(new THREE.AmbientLight("#ffffff", 0.7));
-const sun = new THREE.DirectionalLight("#ffffff", 1.1);
+scene.add(new THREE.AmbientLight("#ffffff", 0.46));
+const skyLight = new THREE.HemisphereLight("#f7fffb", "#8fa09a", 0.42);
+scene.add(skyLight);
+const sun = new THREE.DirectionalLight("#ffffff", 1.35);
 sun.position.set(500, -800, 1200);
+const fillLight = new THREE.DirectionalLight("#d8eeff", 0.32);
+fillLight.position.set(-700, 550, 450);
 scene.add(sun);
+scene.add(fillLight);
 
 const cursorMaterial = new THREE.MeshBasicMaterial({
   color: "#16746d",
@@ -207,6 +215,9 @@ function bindControls() {
   elements.canvas.addEventListener("wheel", handleWheel, { passive: true });
   document.querySelectorAll("[data-touch-move]").forEach((button) => {
     button.addEventListener("click", handleTouchMoveButton);
+  });
+  document.querySelectorAll("[data-touch-pan]").forEach((button) => {
+    button.addEventListener("click", handleTouchPanButton);
   });
   document.querySelectorAll("[data-touch-command]").forEach((button) => {
     button.addEventListener("click", handleTouchCommandButton);
@@ -1206,10 +1217,12 @@ function handleViewportPointerDown(event) {
     state.touchPointers.set(event.pointerId, pointerSnapshot(event));
     captureViewportPointer(event.pointerId);
     if (state.touchPointers.size >= 2) {
+      cancelTouchLongPressDelete();
       beginViewportGesture();
       event.preventDefault();
       return;
     }
+    startTouchLongPressDelete(event);
   }
   state.viewportDrag = {
     pointerId: event.pointerId,
@@ -1224,6 +1237,15 @@ function handleViewportPointerDown(event) {
 }
 
 function handleViewportPointerUp(event) {
+  const longPressDeleted = finishTouchLongPressDelete(event.pointerId);
+  if (longPressDeleted) {
+    if (event.pointerType === "touch") state.touchPointers.delete(event.pointerId);
+    releaseViewportPointer(event.pointerId);
+    state.viewportDrag = null;
+    state.suppressNextClick = true;
+    event.preventDefault();
+    return;
+  }
   if (event.pointerType === "touch" && state.touchPointers.has(event.pointerId)) {
     state.touchPointers.delete(event.pointerId);
     releaseViewportPointer(event.pointerId);
@@ -1250,6 +1272,7 @@ function handleViewportPointerUp(event) {
 }
 
 function handleViewportPointerCancel(event) {
+  cancelTouchLongPressDelete(event.pointerId);
   if (event.pointerType === "touch" && state.touchPointers.has(event.pointerId)) {
     state.touchPointers.delete(event.pointerId);
     state.viewportGesture = null;
@@ -1285,7 +1308,10 @@ function updateViewportDrag(event) {
   if (!drag || drag.pointerId !== event.pointerId) return false;
   const totalX = event.clientX - drag.startX;
   const totalY = event.clientY - drag.startY;
-  if (!drag.moved && Math.hypot(totalX, totalY) < VIEW_DRAG_THRESHOLD_PX) return false;
+  const movement = Math.hypot(totalX, totalY);
+  if (movement >= TOUCH_LONG_PRESS_MOVE_PX) cancelTouchLongPressDelete(event.pointerId);
+  if (!drag.moved && movement < VIEW_DRAG_THRESHOLD_PX) return false;
+  cancelTouchLongPressDelete(event.pointerId);
   drag.moved = true;
   const deltaX = event.clientX - drag.lastX;
   const deltaY = event.clientY - drag.lastY;
@@ -1305,13 +1331,6 @@ function updateViewportGesture(event) {
   const snapshot = touchGestureSnapshot();
   const gesture = state.viewportGesture;
   if (!snapshot || !gesture) return false;
-  const deltaX = snapshot.midpoint.x - gesture.lastMidpoint.x;
-  const deltaY = snapshot.midpoint.y - gesture.lastMidpoint.y;
-  panCameraByView({
-    right: deltaX,
-    forward: -deltaY,
-    step: TOUCH_PAN_MM_PER_PX / Math.max(0.45, camera.zoom)
-  });
   if (snapshot.distance > 1 && gesture.lastDistance > 1) {
     camera.zoom = clamp(camera.zoom * (snapshot.distance / gesture.lastDistance), 0.45, 2.4);
     camera.updateProjectionMatrix();
@@ -1353,6 +1372,52 @@ function pointerSnapshot(event) {
     x: event.clientX,
     y: event.clientY
   };
+}
+
+function startTouchLongPressDelete(event) {
+  const position = blockPositionFromPointerEvent(event);
+  if (!position) return;
+  cancelTouchLongPressDelete();
+  const press = {
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    position,
+    fired: false,
+    timer: null
+  };
+  press.timer = window.setTimeout(() => {
+    const current = state.touchLongPressDelete;
+    if (!current || current.pointerId !== event.pointerId) return;
+    current.fired = true;
+    state.suppressNextClick = true;
+    state.viewportDrag = null;
+    eraseBlockAt(current.position, "已挖掉方塊。");
+  }, TOUCH_LONG_PRESS_DELETE_MS);
+  state.touchLongPressDelete = press;
+}
+
+function finishTouchLongPressDelete(pointerId) {
+  const press = state.touchLongPressDelete;
+  if (!press || press.pointerId !== pointerId) return false;
+  window.clearTimeout(press.timer);
+  state.touchLongPressDelete = null;
+  return press.fired;
+}
+
+function cancelTouchLongPressDelete(pointerId = null) {
+  const press = state.touchLongPressDelete;
+  if (!press || (pointerId !== null && press.pointerId !== pointerId)) return;
+  window.clearTimeout(press.timer);
+  state.touchLongPressDelete = null;
+}
+
+function blockPositionFromPointerEvent(event) {
+  updatePointer(event);
+  raycaster.setFromCamera(pointer, camera);
+  const intersections = raycaster.intersectObjects(blockGroup.children, false);
+  const hit = intersections.find((intersection) => intersection.object.userData.position);
+  return hit?.object.userData.position ? { ...hit.object.userData.position } : null;
 }
 
 function captureViewportPointer(pointerId) {
@@ -1511,6 +1576,16 @@ function projectedCellCenter(position) {
 function handleTouchMoveButton(event) {
   event.preventDefault();
   moveCursorByView(event.currentTarget.dataset.touchMove);
+}
+
+function handleTouchPanButton(event) {
+  event.preventDefault();
+  const direction = event.currentTarget.dataset.touchPan;
+  panCameraByView({
+    right: (direction === "right" ? 1 : 0) - (direction === "left" ? 1 : 0),
+    forward: (direction === "forward" ? 1 : 0) - (direction === "back" ? 1 : 0),
+    step: TOUCH_VIEW_PAN_STEP_MM
+  });
 }
 
 function handleTouchCommandButton(event) {
@@ -1698,15 +1773,22 @@ function pasteCopied() {
 
 function eraseSelected() {
   const target = state.selected || state.cursor;
+  if (!getBlock(state.project, target)) return setWarning("沒有可清除的方塊。");
+  if (!confirm("確定要清除這個方塊嗎？可用復原救回。")) return;
+  eraseBlockAt(target, "已清除方塊。");
+}
+
+function eraseBlockAt(target, message) {
   const block = getBlock(state.project, target);
   if (!block) return setWarning("沒有可清除的方塊。");
-  if (!confirm("確定要清除這個方塊嗎？可用復原救回。")) return;
   const result = removeBlock(state.project, target);
   if (result.ok) {
     state.selected = null;
     commitProject(result.project);
-    setWarning("已清除方塊。");
+    setWarning(message);
+    return;
   }
+  setWarning(result.reason);
 }
 
 function rotateSelectedOrPending() {

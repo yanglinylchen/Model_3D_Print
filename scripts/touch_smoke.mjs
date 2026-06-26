@@ -29,6 +29,7 @@ try {
   const cursorAfterLayerMove = await page.locator("#cursorState").textContent();
   await page.locator("[data-touch-move='right']").click();
   await page.waitForTimeout(250);
+  await page.locator("[data-touch-pan='right']").click();
   const twoFingerGestureDispatched = await page.evaluate(() => {
     const canvas = document.querySelector("#viewport");
     const rect = canvas.getBoundingClientRect();
@@ -68,6 +69,7 @@ try {
       touchShapeImageButtons: touchShapeBar.querySelectorAll("img, .touch-shape-glyph").length,
       touchShapeLoadedImages: Array.from(touchShapeBar.querySelectorAll("img")).filter((icon) => icon.complete && icon.naturalWidth > 0).length,
       touchMaterialButtons: touchMaterialBar.querySelectorAll("[data-material]").length,
+      touchViewPanButtons: document.querySelectorAll("[data-touch-pan]").length,
       selectedShapeActive: selectedShape.classList.contains("selected"),
       selectedMaterialActive: selectedMaterial.classList.contains("selected"),
       touchWorkspacePanelHidden: document.querySelector("#touchWorkspacePanel").hidden,
@@ -95,6 +97,9 @@ try {
   }
   if (metrics.touchMaterialButtons !== 6 || !metrics.selectedMaterialActive) {
     throw new Error(`Touch material bar did not update active material: ${JSON.stringify(metrics)}`);
+  }
+  if (metrics.touchViewPanButtons !== 4) {
+    throw new Error(`Touch view pan pad did not render: ${JSON.stringify(metrics)}`);
   }
   if (!metrics.touchWorkspacePanelHidden || metrics.workspaceX !== "21") {
     throw new Error(`Touch workspace controls did not resize workspace: ${JSON.stringify(metrics)}`);

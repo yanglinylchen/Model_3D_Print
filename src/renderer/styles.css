@@ -253,6 +253,7 @@ h2 {
 
 .touch-dpad,
 .touch-layer-pad,
+.touch-view-pad,
 .touch-actions,
 .touch-top-controls,
 .touch-material-bar,
@@ -366,6 +367,7 @@ h2 {
 
 .touch-dpad button,
 .touch-layer-pad button,
+.touch-view-pad button,
 .touch-actions button,
 .touch-shape-bar button {
   border: 1px solid rgba(30, 45, 48, 0.36);
@@ -422,6 +424,44 @@ h2 {
   bottom: calc(var(--touch-bottom-inset) + 74px);
   display: grid;
   gap: 8px;
+}
+
+.touch-view-pad {
+  position: absolute;
+  right: 18px;
+  bottom: calc(var(--touch-bottom-inset) + 174px);
+  display: grid;
+  grid-template-columns: repeat(3, 46px);
+  grid-template-rows: repeat(3, 46px);
+  gap: 6px;
+}
+
+.touch-view-pad button {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.touch-view-up {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.touch-view-left {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.touch-view-right {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.touch-view-down {
+  grid-column: 2;
+  grid-row: 3;
 }
 
 .touch-layer-pad button,

@@ -50,6 +50,7 @@ try {
   await page.locator("[data-touch-move='up']").click();
   const cursorAfterLayerMove = await page.locator("#cursorState").textContent();
   await page.locator("[data-touch-move='right']").click();
+  await page.locator("[data-touch-pan='right']").click();
   const twoFingerGestureDispatched = await page.evaluate(() => {
     const canvas = document.querySelector("#viewport");
     const rect = canvas.getBoundingClientRect();
@@ -91,6 +92,7 @@ try {
       touchShapeImageButtons: touchShapeBar.querySelectorAll("img, .touch-shape-glyph").length,
       touchShapeLoadedImages: Array.from(touchShapeBar.querySelectorAll("img")).filter((icon) => icon.complete && icon.naturalWidth > 0).length,
       touchMaterialButtons: touchMaterialBar.querySelectorAll("[data-material]").length,
+      touchViewPanButtons: document.querySelectorAll("[data-touch-pan]").length,
       selectedMaterialActive: document.querySelector("#touchMaterialBar [data-material='plain']").classList.contains("selected"),
       touchWorkspacePanelHidden: document.querySelector("#touchWorkspacePanel").hidden,
       workspaceX: document.querySelector("#workspaceX").value,
@@ -113,6 +115,9 @@ try {
   if (metrics.touchShapeLoadedImages !== 7) throw new Error(`Shape SVG icons did not load: ${JSON.stringify(metrics)}`);
   if (metrics.touchMaterialButtons !== 6 || !metrics.selectedMaterialActive) {
     throw new Error(`Touch material bar failed: ${JSON.stringify(metrics)}`);
+  }
+  if (metrics.touchViewPanButtons !== 4) {
+    throw new Error(`Touch view pan pad failed: ${JSON.stringify(metrics)}`);
   }
   if (!metrics.touchWorkspacePanelHidden || metrics.workspaceX !== "21") {
     throw new Error(`Touch workspace controls failed: ${JSON.stringify(metrics)}`);
