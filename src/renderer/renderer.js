@@ -37,6 +37,9 @@ const DOOR_RAIL_MM = 7;
 const DOOR_MID_RAIL_MM = 8;
 const ROAD_THICKNESS_MM = 5;
 const RIVER_THICKNESS_MM = 4;
+const VIEW_DRAG_THRESHOLD_PX = 8;
+const VIEW_DRAG_YAW_SPEED = 0.006;
+const VIEW_DRAG_PITCH_SPEED = 0.0035;
 const EXAMPLES = [
   { label: "小房子", path: `${ASSET}/examples/small_house.m3dp` },
   { label: "石橋", path: `${ASSET}/examples/stone_bridge.m3dp` },
@@ -62,6 +65,8 @@ const state = {
   cameraLift: 0,
   cameraPan: { x: 0, y: 0 },
   pressedKeys: new Set(),
+  viewportDrag: null,
+  suppressNextClick: false,
   warning: ""
 };
 state.history = new ProjectHistory(state.project);
@@ -84,6 +89,7 @@ const elements = {
   warningState: document.getElementById("warningState"),
   placeMode: document.getElementById("placeMode"),
   selectMode: document.getElementById("selectMode"),
+  touchShapeBar: document.getElementById("touchShapeBar"),
   recoverDialog: document.getElementById("recoverDialog")
 };
 
@@ -123,6 +129,7 @@ init();
 function init() {
   renderMaterialControls();
   renderShapeControls();
+  renderTouchShapeBar();
   renderExamples();
   bindControls();
   loadAutosavePrompt();
@@ -154,11 +161,20 @@ function bindControls() {
   elements.shapeList.addEventListener("change", changeActiveShape);
   elements.selectedMaterial.addEventListener("change", changeSelectedMaterial);
   elements.canvas.addEventListener("click", handleViewportClick);
+  elements.canvas.addEventListener("pointerdown", handleViewportPointerDown);
   elements.canvas.addEventListener("pointermove", handlePointerMove);
+  elements.canvas.addEventListener("pointerup", handleViewportPointerUp);
+  elements.canvas.addEventListener("pointercancel", handleViewportPointerCancel);
   window.addEventListener("resize", resizeRenderer);
   window.addEventListener("keydown", handleKeydown);
   window.addEventListener("keyup", handleKeyup);
   elements.canvas.addEventListener("wheel", handleWheel, { passive: true });
+  document.querySelectorAll("[data-touch-move]").forEach((button) => {
+    button.addEventListener("click", handleTouchMoveButton);
+  });
+  document.querySelectorAll("[data-touch-command]").forEach((button) => {
+    button.addEventListener("click", handleTouchCommandButton);
+  });
 }
 
 function renderMaterialControls() {
@@ -186,6 +202,23 @@ function renderShapeControls() {
     option.dataset.shape = shape.id;
     option.textContent = shape.label;
     elements.shapeList.append(option);
+  }
+}
+
+function renderTouchShapeBar() {
+  elements.touchShapeBar.innerHTML = "";
+  for (const shape of Object.values(SHAPES)) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.shape = shape.id;
+    button.textContent = shape.label;
+    button.title = `選擇${shape.label}`;
+    button.addEventListener("click", () => {
+      state.selectedShape = shape.id;
+      clampCursorToSelectedShape();
+      updateUi();
+    });
+    elements.touchShapeBar.append(button);
   }
 }
 
@@ -1070,6 +1103,10 @@ function placeOrSelectAtCursor() {
 }
 
 function handleViewportClick(event) {
+  if (state.suppressNextClick) {
+    state.suppressNextClick = false;
+    return;
+  }
   updatePointer(event);
   raycaster.setFromCamera(pointer, camera);
   const intersections = raycaster.intersectObjects(blockGroup.children, false);
@@ -1097,7 +1134,43 @@ function handleViewportClick(event) {
   }
 }
 
+function handleViewportPointerDown(event) {
+  if (event.button !== 0 || isTouchControlTarget(event.target)) return;
+  state.viewportDrag = {
+    pointerId: event.pointerId,
+    pointerType: event.pointerType,
+    startX: event.clientX,
+    startY: event.clientY,
+    lastX: event.clientX,
+    lastY: event.clientY,
+    moved: false
+  };
+  elements.canvas.setPointerCapture?.(event.pointerId);
+}
+
+function handleViewportPointerUp(event) {
+  const drag = state.viewportDrag;
+  if (!drag || drag.pointerId !== event.pointerId) return;
+  elements.canvas.releasePointerCapture?.(event.pointerId);
+  state.viewportDrag = null;
+  if (drag.moved) {
+    state.suppressNextClick = true;
+    return;
+  }
+  if (drag.pointerType !== "mouse") {
+    handleViewportClick(event);
+    state.suppressNextClick = true;
+  }
+}
+
+function handleViewportPointerCancel(event) {
+  if (state.viewportDrag?.pointerId === event.pointerId) {
+    state.viewportDrag = null;
+  }
+}
+
 function handlePointerMove(event) {
+  if (updateViewportDrag(event)) return;
   updatePointer(event);
   raycaster.setFromCamera(pointer, camera);
   const intersections = raycaster.intersectObjects(blockGroup.children, false);
@@ -1114,6 +1187,23 @@ function handlePointerMove(event) {
     updateCursorMesh();
     updateUi();
   }
+}
+
+function updateViewportDrag(event) {
+  const drag = state.viewportDrag;
+  if (!drag || drag.pointerId !== event.pointerId) return false;
+  const totalX = event.clientX - drag.startX;
+  const totalY = event.clientY - drag.startY;
+  if (!drag.moved && Math.hypot(totalX, totalY) < VIEW_DRAG_THRESHOLD_PX) return false;
+  drag.moved = true;
+  const deltaX = event.clientX - drag.lastX;
+  const deltaY = event.clientY - drag.lastY;
+  drag.lastX = event.clientX;
+  drag.lastY = event.clientY;
+  state.cameraAngle -= deltaX * VIEW_DRAG_YAW_SPEED;
+  state.cameraPitch = clamp(state.cameraPitch - deltaY * VIEW_DRAG_PITCH_SPEED, 0.22, 1.4);
+  event.preventDefault();
+  return true;
 }
 
 function handleKeydown(event) {
@@ -1168,6 +1258,45 @@ function moveCursor(dx, dy, dz) {
   state.cursor.z = clamp(state.cursor.z + dz, 0, maxCursorZ());
   updateCursorMesh();
   updateUi();
+}
+
+function moveCursorByView(direction) {
+  if (direction === "up") return moveCursor(0, 0, 1);
+  if (direction === "down") return moveCursor(0, 0, -1);
+  const vector = directionVectorFromView(direction);
+  if (Math.abs(vector.x) >= Math.abs(vector.y)) {
+    moveCursor(Math.sign(vector.x), 0, 0);
+    return;
+  }
+  moveCursor(0, Math.sign(vector.y), 0);
+}
+
+function directionVectorFromView(direction) {
+  const viewForward = {
+    x: -Math.cos(state.cameraAngle),
+    y: -Math.sin(state.cameraAngle)
+  };
+  const viewRight = {
+    x: -Math.sin(state.cameraAngle),
+    y: Math.cos(state.cameraAngle)
+  };
+  if (direction === "back") return { x: -viewForward.x, y: -viewForward.y };
+  if (direction === "right") return viewRight;
+  if (direction === "left") return { x: -viewRight.x, y: -viewRight.y };
+  return viewForward;
+}
+
+function handleTouchMoveButton(event) {
+  event.preventDefault();
+  moveCursorByView(event.currentTarget.dataset.touchMove);
+}
+
+function handleTouchCommandButton(event) {
+  event.preventDefault();
+  const command = event.currentTarget.dataset.touchCommand;
+  if (command === "place") return placeOrSelectAtCursor();
+  if (command === "rotate") return rotateSelectedOrPending();
+  if (command === "erase") return eraseSelected();
 }
 
 function rotateCamera(delta) {
@@ -1517,6 +1646,10 @@ function isTextInputTarget(target) {
     || target instanceof HTMLSelectElement
     || target instanceof HTMLTextAreaElement
     || target?.isContentEditable;
+}
+
+function isTouchControlTarget(target) {
+  return Boolean(target?.closest?.(".touch-hud"));
 }
 
 function clamp(value, min, max) {

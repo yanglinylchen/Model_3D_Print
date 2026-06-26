@@ -49,6 +49,24 @@
           <button id="cameraLeft" title="視角左轉">↺</button>
           <button id="cameraRight" title="視角右轉">↻</button>
         </div>
+        <div class="touch-hud" aria-label="觸控操作">
+          <div class="touch-dpad" aria-label="游標方向">
+            <button data-touch-move="forward" class="touch-dpad-up" title="游標往前">▲</button>
+            <button data-touch-move="left" class="touch-dpad-left" title="游標往左">◀</button>
+            <button data-touch-command="place" class="touch-dpad-center" title="放置目前物件">●</button>
+            <button data-touch-move="right" class="touch-dpad-right" title="游標往右">▶</button>
+            <button data-touch-move="back" class="touch-dpad-down" title="游標往後">▼</button>
+          </div>
+          <div class="touch-layer-pad" aria-label="高度控制">
+            <button data-touch-move="up" title="游標上移一層">上</button>
+            <button data-touch-move="down" title="游標下移一層">下</button>
+          </div>
+          <div class="touch-actions" aria-label="方塊操作">
+            <button data-touch-command="rotate" title="旋轉目前物件">旋轉</button>
+            <button data-touch-command="erase" title="清除選取物件">清除</button>
+          </div>
+          <div id="touchShapeBar" class="touch-shape-bar" aria-label="形狀熱鍵列"></div>
+        </div>
       </main>
 
       <aside class="right-panel">

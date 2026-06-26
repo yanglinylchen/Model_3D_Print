@@ -192,6 +192,7 @@ h2 {
   display: block;
   width: 100%;
   height: 100%;
+  touch-action: none;
 }
 
 .camera-pad {
@@ -208,6 +209,129 @@ h2 {
   border-radius: 50%;
   background: #ffffffd9;
   font-size: 22px;
+}
+
+.touch-hud {
+  display: none;
+}
+
+.touch-dpad,
+.touch-layer-pad,
+.touch-actions,
+.touch-shape-bar {
+  pointer-events: auto;
+}
+
+.touch-dpad {
+  position: absolute;
+  left: 18px;
+  bottom: 78px;
+  display: grid;
+  grid-template-columns: repeat(3, 56px);
+  grid-template-rows: repeat(3, 56px);
+  gap: 6px;
+}
+
+.touch-dpad button,
+.touch-layer-pad button,
+.touch-actions button,
+.touch-shape-bar button {
+  border: 1px solid rgba(30, 45, 48, 0.36);
+  background: rgba(255, 255, 255, 0.74);
+  color: #1d2c2f;
+  box-shadow: 0 6px 18px rgba(20, 32, 34, 0.12);
+  backdrop-filter: blur(10px);
+}
+
+.touch-dpad button {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.touch-dpad-up {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.touch-dpad-left {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.touch-dpad-center {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.touch-dpad-right {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.touch-dpad-down {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+.touch-layer-pad {
+  position: absolute;
+  left: 202px;
+  bottom: 144px;
+  display: grid;
+  gap: 8px;
+}
+
+.touch-actions {
+  position: absolute;
+  right: 18px;
+  bottom: 88px;
+  display: grid;
+  gap: 8px;
+}
+
+.touch-layer-pad button,
+.touch-actions button {
+  min-width: 62px;
+  min-height: 44px;
+  border-radius: 22px;
+  padding: 0 14px;
+  font-weight: 700;
+}
+
+.touch-shape-bar {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 14px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 8px;
+  scrollbar-width: none;
+}
+
+.touch-shape-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.touch-shape-bar button {
+  flex: 0 0 auto;
+  min-width: 74px;
+  min-height: 46px;
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.touch-shape-bar button.selected {
+  border-color: var(--accent);
+  background: rgba(22, 116, 109, 0.88);
+  color: #ffffff;
+  outline: 0;
 }
 
 .dimension-row {
@@ -263,4 +387,64 @@ dialog {
 
 dialog::backdrop {
   background: rgba(20, 30, 32, 0.35);
+}
+
+@media (hover: none), (pointer: coarse), (max-width: 1100px) {
+  #app {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 54px minmax(0, 1fr) 38px;
+  }
+
+  .toolbar,
+  .statusbar {
+    grid-column: 1;
+  }
+
+  .toolbar {
+    gap: 6px;
+    overflow-x: auto;
+    padding: 8px 10px;
+    scrollbar-width: none;
+  }
+
+  .toolbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .brand {
+    min-width: 132px;
+    font-size: 17px;
+  }
+
+  .toolbar button {
+    flex: 0 0 auto;
+    min-height: 34px;
+    padding: 0 10px;
+  }
+
+  .left-panel,
+  .right-panel {
+    display: none;
+  }
+
+  .viewport-shell {
+    grid-column: 1;
+  }
+
+  .camera-pad {
+    display: none;
+  }
+
+  .touch-hud {
+    display: block;
+    pointer-events: none;
+  }
+
+  .statusbar {
+    gap: 12px;
+    overflow: hidden;
+    padding: 0 10px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
 }
