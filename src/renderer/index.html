@@ -45,6 +45,10 @@
 
       <main class="viewport-shell">
         <canvas id="viewport"></canvas>
+        <div id="fileProtocolWarning" class="file-protocol-warning" hidden>
+          <strong>網頁版需要透過 http 或 https 開啟</strong>
+          <span>請使用本機預覽伺服器或 GitHub Pages。直接雙擊 index.html 時，瀏覽器會阻擋建模核心載入。</span>
+        </div>
         <div class="camera-pad" aria-label="視角控制">
           <button id="cameraLeft" title="視角左轉">↺</button>
           <button id="cameraRight" title="視角右轉">↻</button>
@@ -121,6 +125,11 @@
       }
     </script>
     <script src="./web-adapter.js"></script>
+    <script>
+      if (window.location.protocol === "file:" && window.model3d?.platform === "web") {
+        document.getElementById("fileProtocolWarning").hidden = false;
+      }
+    </script>
     <script type="module" src="./renderer.js"></script>
   </body>
 </html>

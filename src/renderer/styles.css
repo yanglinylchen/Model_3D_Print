@@ -211,6 +211,35 @@ h2 {
   font-size: 22px;
 }
 
+.file-protocol-warning {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 5;
+  display: grid;
+  width: min(420px, calc(100% - 48px));
+  gap: 8px;
+  padding: 16px 18px;
+  border: 1px solid rgba(139, 56, 24, 0.24);
+  border-radius: 8px;
+  background: rgba(255, 250, 241, 0.94);
+  color: #533423;
+  box-shadow: 0 12px 34px rgba(42, 34, 25, 0.16);
+  transform: translate(-50%, -50%);
+}
+
+.file-protocol-warning strong {
+  font-size: 16px;
+}
+
+.file-protocol-warning span {
+  line-height: 1.45;
+}
+
+.file-protocol-warning[hidden] {
+  display: none;
+}
+
 .touch-hud {
   display: none;
 }

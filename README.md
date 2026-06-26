@@ -11,9 +11,11 @@ Production desktop app project for a Minecraft-like voxel modeling environment t
 ## Web Version
 
 - `npm run web:build`: build the static HTML version into `dist/web`.
+- `npm run web:serve`: preview `dist/web` at `http://127.0.0.1:4178/`.
 - `npm run web:smoke`: serve `dist/web` over local HTTP and verify the web adapter, WebGL, and tablet touch layout.
 
 The web build keeps the same modeling UI. In a browser, project files are opened with the file picker and saved as downloads; STL export downloads a `.stl` file directly.
+Open the web build through `http://` or `https://`; directly double-clicking `dist/web/index.html` uses `file://`, which blocks the module-based modeling engine in many browsers.
 
 GitHub Pages deployment is configured in `.github/workflows/pages.yml`. After this project is pushed to a GitHub repository with Pages enabled for GitHub Actions, the workflow will publish `dist/web`.
 
