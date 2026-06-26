@@ -43,6 +43,8 @@ const VIEW_DRAG_PITCH_SPEED = 0.0035;
 const TOUCH_LONG_PRESS_DELETE_MS = 620;
 const TOUCH_LONG_PRESS_MOVE_PX = 12;
 const TOUCH_VIEW_PAN_STEP_MM = CELL_SIZE_MM * 0.38;
+const TOUCH_BUTTON_REPEAT_DELAY_MS = 300;
+const TOUCH_BUTTON_REPEAT_INTERVAL_MS = 95;
 const SHAPE_ICON_LABELS = Object.freeze({
   cube: "■",
   prism_30: "◢",
@@ -96,6 +98,8 @@ const state = {
   touchPointers: new Map(),
   viewportGesture: null,
   touchLongPressDelete: null,
+  touchButtonRepeat: null,
+  suppressTouchButtonClickUntil: 0,
   suppressNextClick: false,
   warning: ""
 };
@@ -214,10 +218,10 @@ function bindControls() {
   window.addEventListener("keyup", handleKeyup);
   elements.canvas.addEventListener("wheel", handleWheel, { passive: true });
   document.querySelectorAll("[data-touch-move]").forEach((button) => {
-    button.addEventListener("click", handleTouchMoveButton);
+    bindRepeatingTouchButton(button, () => moveCursorByView(button.dataset.touchMove));
   });
   document.querySelectorAll("[data-touch-pan]").forEach((button) => {
-    button.addEventListener("click", handleTouchPanButton);
+    bindRepeatingTouchButton(button, () => panTouchView(button.dataset.touchPan));
   });
   document.querySelectorAll("[data-touch-command]").forEach((button) => {
     button.addEventListener("click", handleTouchCommandButton);
@@ -1573,14 +1577,59 @@ function projectedCellCenter(position) {
   return { x: vector.x, y: vector.y };
 }
 
-function handleTouchMoveButton(event) {
-  event.preventDefault();
-  moveCursorByView(event.currentTarget.dataset.touchMove);
+function bindRepeatingTouchButton(button, action) {
+  button.addEventListener("pointerdown", (event) => startRepeatingTouchButton(event, action));
+  button.addEventListener("pointerup", stopRepeatingTouchButton);
+  button.addEventListener("pointercancel", stopRepeatingTouchButton);
+  button.addEventListener("lostpointercapture", stopRepeatingTouchButton);
+  button.addEventListener("click", (event) => handleRepeatingTouchButtonClick(event, action));
+  button.addEventListener("contextmenu", (event) => event.preventDefault());
 }
 
-function handleTouchPanButton(event) {
+function startRepeatingTouchButton(event, action) {
+  if (event.button !== 0) return;
   event.preventDefault();
-  const direction = event.currentTarget.dataset.touchPan;
+  stopRepeatingTouchButton();
+  action();
+  const repeat = {
+    pointerId: event.pointerId,
+    target: event.currentTarget,
+    timeout: null,
+    interval: null
+  };
+  repeat.timeout = window.setTimeout(() => {
+    action();
+    repeat.interval = window.setInterval(action, TOUCH_BUTTON_REPEAT_INTERVAL_MS);
+  }, TOUCH_BUTTON_REPEAT_DELAY_MS);
+  state.touchButtonRepeat = repeat;
+  try {
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  } catch {
+    // Synthetic events in smoke checks may not have an active pointer to capture.
+  }
+}
+
+function stopRepeatingTouchButton(event = null) {
+  const repeat = state.touchButtonRepeat;
+  if (!repeat || (event?.pointerId !== undefined && event.pointerId !== repeat.pointerId)) return;
+  window.clearTimeout(repeat.timeout);
+  window.clearInterval(repeat.interval);
+  try {
+    repeat.target.releasePointerCapture?.(repeat.pointerId);
+  } catch {
+    // The pointer may already be released.
+  }
+  state.touchButtonRepeat = null;
+  state.suppressTouchButtonClickUntil = performance.now() + 360;
+}
+
+function handleRepeatingTouchButtonClick(event, action) {
+  event.preventDefault();
+  if (performance.now() < state.suppressTouchButtonClickUntil) return;
+  action();
+}
+
+function panTouchView(direction) {
   panCameraByView({
     right: (direction === "right" ? 1 : 0) - (direction === "left" ? 1 : 0),
     forward: (direction === "forward" ? 1 : 0) - (direction === "back" ? 1 : 0),

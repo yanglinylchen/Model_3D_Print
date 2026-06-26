@@ -29,6 +29,28 @@ try {
   const cursorAfterLayerMove = await page.locator("#cursorState").textContent();
   await page.locator("[data-touch-move='right']").click();
   await page.waitForTimeout(250);
+  const cursorAfterStepMove = await page.locator("#cursorState").textContent();
+  const cursorAfterHoldMove = await page.evaluate(async () => {
+    const button = document.querySelector("[data-touch-move='right']");
+    button.dispatchEvent(new PointerEvent("pointerdown", {
+      bubbles: true,
+      cancelable: true,
+      pointerId: 301,
+      pointerType: "touch",
+      button: 0,
+      buttons: 1
+    }));
+    await new Promise((resolve) => setTimeout(resolve, 560));
+    button.dispatchEvent(new PointerEvent("pointerup", {
+      bubbles: true,
+      cancelable: true,
+      pointerId: 301,
+      pointerType: "touch",
+      button: 0,
+      buttons: 0
+    }));
+    return document.querySelector("#cursorState")?.textContent || "";
+  });
   await page.locator("[data-touch-pan='right']").click();
   const twoFingerGestureDispatched = await page.evaluate(() => {
     const canvas = document.querySelector("#viewport");
@@ -56,7 +78,7 @@ try {
     return true;
   });
 
-  const metrics = await page.evaluate(({ cursorAfterLayerMove, twoFingerGestureDispatched }) => {
+  const metrics = await page.evaluate(({ cursorAfterLayerMove, cursorAfterStepMove, cursorAfterHoldMove, twoFingerGestureDispatched }) => {
     const touchHud = document.querySelector(".touch-hud");
     const touchShapeBar = document.querySelector("#touchShapeBar");
     const touchMaterialBar = document.querySelector("#touchMaterialBar");
@@ -76,12 +98,14 @@ try {
       workspaceX: document.querySelector("#workspaceX").value,
       cursorState: document.querySelector("#cursorState")?.textContent || "",
       cursorAfterLayerMove,
+      cursorAfterStepMove,
+      cursorAfterHoldMove,
       twoFingerGestureDispatched,
       modeState: document.querySelector("#modeState")?.textContent || "",
       leftPanelDisplay: getComputedStyle(document.querySelector(".left-panel")).display,
       rightPanelDisplay: getComputedStyle(document.querySelector(".right-panel")).display
     };
-  }, { cursorAfterLayerMove, twoFingerGestureDispatched });
+  }, { cursorAfterLayerMove, cursorAfterStepMove, cursorAfterHoldMove, twoFingerGestureDispatched });
 
   if (metrics.touchHudDisplay === "none") {
     throw new Error(`Touch HUD did not appear at tablet width: ${JSON.stringify(metrics)}`);
@@ -110,8 +134,11 @@ try {
   if (!metrics.cursorAfterLayerMove.includes("0, 0, 1")) {
     throw new Error(`Touch layer button did not move cursor up: ${JSON.stringify(metrics)}`);
   }
-  if (metrics.cursorState === metrics.cursorAfterLayerMove) {
+  if (metrics.cursorAfterStepMove === metrics.cursorAfterLayerMove) {
     throw new Error(`Screen-relative touch D-pad did not move cursor horizontally: ${JSON.stringify(metrics)}`);
+  }
+  if (metrics.cursorAfterHoldMove === metrics.cursorAfterStepMove) {
+    throw new Error(`Touch D-pad hold did not repeat cursor movement: ${JSON.stringify(metrics)}`);
   }
   if (!metrics.twoFingerGestureDispatched) {
     throw new Error(`Two-finger gesture did not dispatch: ${JSON.stringify(metrics)}`);
