@@ -40,21 +40,26 @@ try {
   }
   await frameButton.click();
   await page.locator("[data-touch-move='up']").click();
+  const cursorAfterLayerMove = await page.locator("#cursorState").textContent();
+  await page.locator("[data-touch-move='right']").click();
 
-  const metrics = await page.evaluate(() => {
+  const metrics = await page.evaluate((cursorAfterLayerMove) => {
     const canvas = document.querySelector("#viewport");
     const context = canvas.getContext("webgl2") || canvas.getContext("webgl");
+    const touchShapeBar = document.querySelector("#touchShapeBar");
     return {
       platform: window.model3d?.platform,
       location: window.location.href,
       hasWebgl: Boolean(context),
       touchHudDisplay: getComputedStyle(document.querySelector(".touch-hud")).display,
+      touchShapeBarBottom: getComputedStyle(touchShapeBar).bottom,
       touchShapeButtons: document.querySelectorAll("#touchShapeBar [data-shape]").length,
       cursorState: document.querySelector("#cursorState")?.textContent || "",
+      cursorAfterLayerMove,
       modeState: document.querySelector("#modeState")?.textContent || "",
       leftPanelDisplay: getComputedStyle(document.querySelector(".left-panel")).display
     };
-  });
+  }, cursorAfterLayerMove);
 
   if (metrics.platform !== "web") throw new Error(`Web adapter did not install: ${JSON.stringify(metrics)}`);
   if (!metrics.location.startsWith("http://127.0.0.1:")) {
@@ -63,7 +68,12 @@ try {
   if (!metrics.hasWebgl) throw new Error(`WebGL did not initialize: ${JSON.stringify(metrics)}`);
   if (metrics.touchHudDisplay === "none") throw new Error(`Touch HUD did not appear: ${JSON.stringify(metrics)}`);
   if (metrics.touchShapeButtons !== 13) throw new Error(`Shape bar mismatch: ${JSON.stringify(metrics)}`);
-  if (!metrics.cursorState.includes("0, 0, 1")) throw new Error(`Touch layer move failed: ${JSON.stringify(metrics)}`);
+  if (!metrics.cursorAfterLayerMove.includes("0, 0, 1")) {
+    throw new Error(`Touch layer move failed: ${JSON.stringify(metrics)}`);
+  }
+  if (metrics.cursorState === metrics.cursorAfterLayerMove) {
+    throw new Error(`Screen-relative touch D-pad did not move cursor horizontally: ${JSON.stringify(metrics)}`);
+  }
   if (!metrics.modeState.includes("框架方塊")) throw new Error(`Touch shape selection failed: ${JSON.stringify(metrics)}`);
   if (metrics.leftPanelDisplay !== "none") throw new Error(`Tablet layout did not collapse panels: ${JSON.stringify(metrics)}`);
 

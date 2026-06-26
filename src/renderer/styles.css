@@ -9,6 +9,7 @@
   --accent-strong: #0f5954;
   --warning: #b77911;
   --danger: #a83d32;
+  --touch-bottom-inset: max(22px, calc(env(safe-area-inset-bottom, 0px) + 22px));
 }
 
 * {
@@ -64,6 +65,7 @@ button.danger {
   grid-template-rows: 58px minmax(0, 1fr) 42px;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
 }
 
 .toolbar {
@@ -254,7 +256,7 @@ h2 {
 .touch-dpad {
   position: absolute;
   left: 18px;
-  bottom: 78px;
+  bottom: calc(var(--touch-bottom-inset) + 64px);
   display: grid;
   grid-template-columns: repeat(3, 56px);
   grid-template-rows: repeat(3, 56px);
@@ -308,7 +310,7 @@ h2 {
 .touch-layer-pad {
   position: absolute;
   left: 202px;
-  bottom: 144px;
+  bottom: calc(var(--touch-bottom-inset) + 130px);
   display: grid;
   gap: 8px;
 }
@@ -316,7 +318,7 @@ h2 {
 .touch-actions {
   position: absolute;
   right: 18px;
-  bottom: 88px;
+  bottom: calc(var(--touch-bottom-inset) + 74px);
   display: grid;
   gap: 8px;
 }
@@ -334,7 +336,7 @@ h2 {
   position: absolute;
   left: 16px;
   right: 16px;
-  bottom: 14px;
+  bottom: var(--touch-bottom-inset);
   display: flex;
   gap: 8px;
   overflow-x: auto;

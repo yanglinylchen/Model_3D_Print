@@ -1263,27 +1263,64 @@ function moveCursor(dx, dy, dz) {
 function moveCursorByView(direction) {
   if (direction === "up") return moveCursor(0, 0, 1);
   if (direction === "down") return moveCursor(0, 0, -1);
-  const vector = directionVectorFromView(direction);
-  if (Math.abs(vector.x) >= Math.abs(vector.y)) {
-    moveCursor(Math.sign(vector.x), 0, 0);
-    return;
-  }
-  moveCursor(0, Math.sign(vector.y), 0);
+  const delta = screenRelativeCursorDelta(direction);
+  moveCursor(delta.x, delta.y, 0);
 }
 
-function directionVectorFromView(direction) {
-  const viewForward = {
-    x: -Math.cos(state.cameraAngle),
-    y: -Math.sin(state.cameraAngle)
-  };
-  const viewRight = {
-    x: -Math.sin(state.cameraAngle),
-    y: Math.cos(state.cameraAngle)
-  };
-  if (direction === "back") return { x: -viewForward.x, y: -viewForward.y };
-  if (direction === "right") return viewRight;
-  if (direction === "left") return { x: -viewRight.x, y: -viewRight.y };
-  return viewForward;
+function screenRelativeCursorDelta(direction) {
+  updateCamera();
+  camera.updateMatrixWorld();
+  const desired = {
+    forward: { x: 0, y: 1 },
+    back: { x: 0, y: -1 },
+    left: { x: -1, y: 0 },
+    right: { x: 1, y: 0 }
+  }[direction] || { x: 0, y: 1 };
+  const origin = projectedCellCenter(state.cursor);
+  const candidates = [
+    { x: 1, y: 0 },
+    { x: -1, y: 0 },
+    { x: 0, y: 1 },
+    { x: 0, y: -1 }
+  ];
+  let best = { x: 0, y: 0 };
+  let bestScore = -Infinity;
+  for (const delta of candidates) {
+    const position = {
+      x: state.cursor.x + delta.x,
+      y: state.cursor.y + delta.y,
+      z: state.cursor.z
+    };
+    if (
+      position.x < 0
+      || position.x >= state.project.workspaceCells.x
+      || position.y < 0
+      || position.y >= state.project.workspaceCells.y
+    ) continue;
+    const projected = projectedCellCenter(position);
+    const screenDelta = {
+      x: projected.x - origin.x,
+      y: projected.y - origin.y
+    };
+    const length = Math.hypot(screenDelta.x, screenDelta.y);
+    if (length < 0.0001) continue;
+    const score = ((screenDelta.x / length) * desired.x) + ((screenDelta.y / length) * desired.y);
+    if (score > bestScore) {
+      bestScore = score;
+      best = delta;
+    }
+  }
+  return best;
+}
+
+function projectedCellCenter(position) {
+  const vector = new THREE.Vector3(
+    (position.x + 0.5) * CELL_SIZE_MM,
+    (position.y + 0.5) * CELL_SIZE_MM,
+    (position.z + 0.5) * CELL_SIZE_MM
+  );
+  vector.project(camera);
+  return { x: vector.x, y: vector.y };
 }
 
 function handleTouchMoveButton(event) {
