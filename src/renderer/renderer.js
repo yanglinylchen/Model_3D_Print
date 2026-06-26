@@ -40,6 +40,7 @@ const RIVER_THICKNESS_MM = 4;
 const VIEW_DRAG_THRESHOLD_PX = 8;
 const VIEW_DRAG_YAW_SPEED = 0.006;
 const VIEW_DRAG_PITCH_SPEED = 0.0035;
+const TOUCH_PAN_MM_PER_PX = 0.7;
 const EXAMPLES = [
   { label: "小房子", path: `${ASSET}/examples/small_house.m3dp` },
   { label: "石橋", path: `${ASSET}/examples/stone_bridge.m3dp` },
@@ -66,6 +67,8 @@ const state = {
   cameraPan: { x: 0, y: 0 },
   pressedKeys: new Set(),
   viewportDrag: null,
+  touchPointers: new Map(),
+  viewportGesture: null,
   suppressNextClick: false,
   warning: ""
 };
@@ -1136,6 +1139,15 @@ function handleViewportClick(event) {
 
 function handleViewportPointerDown(event) {
   if (event.button !== 0 || isTouchControlTarget(event.target)) return;
+  if (event.pointerType === "touch") {
+    state.touchPointers.set(event.pointerId, pointerSnapshot(event));
+    captureViewportPointer(event.pointerId);
+    if (state.touchPointers.size >= 2) {
+      beginViewportGesture();
+      event.preventDefault();
+      return;
+    }
+  }
   state.viewportDrag = {
     pointerId: event.pointerId,
     pointerType: event.pointerType,
@@ -1145,13 +1157,24 @@ function handleViewportPointerDown(event) {
     lastY: event.clientY,
     moved: false
   };
-  elements.canvas.setPointerCapture?.(event.pointerId);
+  captureViewportPointer(event.pointerId);
 }
 
 function handleViewportPointerUp(event) {
+  if (event.pointerType === "touch" && state.touchPointers.has(event.pointerId)) {
+    state.touchPointers.delete(event.pointerId);
+    releaseViewportPointer(event.pointerId);
+    if (state.viewportGesture || state.touchPointers.size > 0) {
+      state.viewportGesture = null;
+      state.viewportDrag = null;
+      state.suppressNextClick = true;
+      event.preventDefault();
+      return;
+    }
+  }
   const drag = state.viewportDrag;
   if (!drag || drag.pointerId !== event.pointerId) return;
-  elements.canvas.releasePointerCapture?.(event.pointerId);
+  releaseViewportPointer(event.pointerId);
   state.viewportDrag = null;
   if (drag.moved) {
     state.suppressNextClick = true;
@@ -1164,12 +1187,17 @@ function handleViewportPointerUp(event) {
 }
 
 function handleViewportPointerCancel(event) {
+  if (event.pointerType === "touch" && state.touchPointers.has(event.pointerId)) {
+    state.touchPointers.delete(event.pointerId);
+    state.viewportGesture = null;
+  }
   if (state.viewportDrag?.pointerId === event.pointerId) {
     state.viewportDrag = null;
   }
 }
 
 function handlePointerMove(event) {
+  if (updateViewportGesture(event)) return;
   if (updateViewportDrag(event)) return;
   updatePointer(event);
   raycaster.setFromCamera(pointer, camera);
@@ -1204,6 +1232,80 @@ function updateViewportDrag(event) {
   state.cameraPitch = clamp(state.cameraPitch - deltaY * VIEW_DRAG_PITCH_SPEED, 0.22, 1.4);
   event.preventDefault();
   return true;
+}
+
+function updateViewportGesture(event) {
+  if (event.pointerType !== "touch" || !state.touchPointers.has(event.pointerId)) return false;
+  state.touchPointers.set(event.pointerId, pointerSnapshot(event));
+  if (state.touchPointers.size < 2) return false;
+  if (!state.viewportGesture) beginViewportGesture();
+  const snapshot = touchGestureSnapshot();
+  const gesture = state.viewportGesture;
+  if (!snapshot || !gesture) return false;
+  const deltaX = snapshot.midpoint.x - gesture.lastMidpoint.x;
+  const deltaY = snapshot.midpoint.y - gesture.lastMidpoint.y;
+  panCameraByView({
+    right: deltaX,
+    forward: -deltaY,
+    step: TOUCH_PAN_MM_PER_PX / Math.max(0.45, camera.zoom)
+  });
+  if (snapshot.distance > 1 && gesture.lastDistance > 1) {
+    camera.zoom = clamp(camera.zoom * (snapshot.distance / gesture.lastDistance), 0.45, 2.4);
+    camera.updateProjectionMatrix();
+  }
+  gesture.lastMidpoint = snapshot.midpoint;
+  gesture.lastDistance = snapshot.distance;
+  state.viewportDrag = null;
+  state.suppressNextClick = true;
+  event.preventDefault();
+  return true;
+}
+
+function beginViewportGesture() {
+  const snapshot = touchGestureSnapshot();
+  if (!snapshot) return;
+  state.viewportGesture = {
+    lastMidpoint: snapshot.midpoint,
+    lastDistance: snapshot.distance
+  };
+  state.viewportDrag = null;
+  state.suppressNextClick = true;
+}
+
+function touchGestureSnapshot() {
+  const pointers = Array.from(state.touchPointers.values()).slice(0, 2);
+  if (pointers.length < 2) return null;
+  const [a, b] = pointers;
+  return {
+    midpoint: {
+      x: (a.x + b.x) / 2,
+      y: (a.y + b.y) / 2
+    },
+    distance: Math.hypot(a.x - b.x, a.y - b.y)
+  };
+}
+
+function pointerSnapshot(event) {
+  return {
+    x: event.clientX,
+    y: event.clientY
+  };
+}
+
+function captureViewportPointer(pointerId) {
+  try {
+    elements.canvas.setPointerCapture?.(pointerId);
+  } catch {
+    // Synthetic pointer events in smoke tests do not always have an active browser pointer.
+  }
+}
+
+function releaseViewportPointer(pointerId) {
+  try {
+    elements.canvas.releasePointerCapture?.(pointerId);
+  } catch {
+    // The pointer may already be released after a touch gesture ends.
+  }
 }
 
 function handleKeydown(event) {

@@ -42,8 +42,33 @@ try {
   await page.locator("[data-touch-move='up']").click();
   const cursorAfterLayerMove = await page.locator("#cursorState").textContent();
   await page.locator("[data-touch-move='right']").click();
+  const twoFingerGestureDispatched = await page.evaluate(() => {
+    const canvas = document.querySelector("#viewport");
+    const rect = canvas.getBoundingClientRect();
+    const startX = rect.left + rect.width / 2;
+    const startY = rect.top + rect.height / 2;
+    function send(type, pointerId, x, y) {
+      canvas.dispatchEvent(new PointerEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        pointerId,
+        pointerType: "touch",
+        button: 0,
+        buttons: type === "pointerup" ? 0 : 1,
+        clientX: x,
+        clientY: y
+      }));
+    }
+    send("pointerdown", 101, startX - 45, startY);
+    send("pointerdown", 102, startX + 45, startY);
+    send("pointermove", 101, startX - 65, startY - 44);
+    send("pointermove", 102, startX + 65, startY - 44);
+    send("pointerup", 101, startX - 65, startY - 44);
+    send("pointerup", 102, startX + 65, startY - 44);
+    return true;
+  });
 
-  const metrics = await page.evaluate((cursorAfterLayerMove) => {
+  const metrics = await page.evaluate(({ cursorAfterLayerMove, twoFingerGestureDispatched }) => {
     const canvas = document.querySelector("#viewport");
     const context = canvas.getContext("webgl2") || canvas.getContext("webgl");
     const touchShapeBar = document.querySelector("#touchShapeBar");
@@ -56,10 +81,11 @@ try {
       touchShapeButtons: document.querySelectorAll("#touchShapeBar [data-shape]").length,
       cursorState: document.querySelector("#cursorState")?.textContent || "",
       cursorAfterLayerMove,
+      twoFingerGestureDispatched,
       modeState: document.querySelector("#modeState")?.textContent || "",
       leftPanelDisplay: getComputedStyle(document.querySelector(".left-panel")).display
     };
-  }, cursorAfterLayerMove);
+  }, { cursorAfterLayerMove, twoFingerGestureDispatched });
 
   if (metrics.platform !== "web") throw new Error(`Web adapter did not install: ${JSON.stringify(metrics)}`);
   if (!metrics.location.startsWith("http://127.0.0.1:")) {
@@ -73,6 +99,9 @@ try {
   }
   if (metrics.cursorState === metrics.cursorAfterLayerMove) {
     throw new Error(`Screen-relative touch D-pad did not move cursor horizontally: ${JSON.stringify(metrics)}`);
+  }
+  if (!metrics.twoFingerGestureDispatched) {
+    throw new Error(`Two-finger gesture did not dispatch: ${JSON.stringify(metrics)}`);
   }
   if (!metrics.modeState.includes("框架方塊")) throw new Error(`Touch shape selection failed: ${JSON.stringify(metrics)}`);
   if (metrics.leftPanelDisplay !== "none") throw new Error(`Tablet layout did not collapse panels: ${JSON.stringify(metrics)}`);
